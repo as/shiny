@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// TODO(as): Looks pretty elaborate; might this outperform
+// NT's bitfields? (personally wouldn't be surprised if it did)
+
 #include "textflag.h"
 
 // func haveSSSE3() bool
