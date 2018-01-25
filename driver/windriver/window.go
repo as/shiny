@@ -43,8 +43,8 @@ func (w *windowImpl) Release() {
 }
 
 func (w *windowImpl) Upload(dp image.Point, src screen.Buffer, sr image.Rectangle) {
-	src.(*bufferImpl).preUpload()
-	defer src.(*bufferImpl).postUpload()
+	//	src.(*bufferImpl).preUpload()
+	//	defer src.(*bufferImpl).postUpload()
 
 	w.execCmd(&cmd{
 		id:     cmdUpload,

@@ -17,14 +17,17 @@ import (
 
 func mkbitmap(size image.Point) (syscall.Handle, *byte, error) {
 	bi := _BITMAPINFO{
-		Header: _BITMAPINFOHEADER{
-			Size:        uint32(unsafe.Sizeof(_BITMAPINFOHEADER{})),
+		Header: BitmapInfoV4{
+			Size:        uint32(0x76),
 			Width:       int32(size.X),
 			Height:      -int32(size.Y), // negative height to force top-down drawing
 			Planes:      1,
 			BitCount:    32,
-			Compression: _BI_RGB,
+			Compression: _BI_BITFIELDS,
 			SizeImage:   uint32(size.X * size.Y * 4),
+			Red:         0x000000ff,
+			Green:       0x0000ff00,
+			Blue:        0x00ff0000,
 		},
 	}
 
@@ -50,22 +53,9 @@ func copyBitmapToDC(dc syscall.Handle, dr image.Rectangle, src syscall.Handle, s
 	}
 	defer _DeleteDC(memdc)
 
-	prev, err := _SelectObject(memdc, src)
+	_, err = _SelectObject(memdc, src)
 	if err != nil {
 		return err
-	}
-	defer func() {
-		_, err2 := _SelectObject(memdc, prev)
-		if retErr == nil {
-			retErr = err2
-		}
-	}()
-
-	if _GetDeviceCaps(dc, _SHADEBLENDCAPS) == _SB_NONE {
-		// This output device does not support blending capabilities,
-		// so the subsequent output is incorrect, but is the best we
-		// can do on systems that do not support AlphaBlend.
-		op = draw.Src
 	}
 
 	switch op {

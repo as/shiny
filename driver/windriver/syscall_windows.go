@@ -26,6 +26,23 @@ type _RECT struct {
 	Bottom int32
 }
 
+type BitmapInfoV4 struct {
+	Size                    uint32
+	Width                   int32
+	Height                  int32
+	Planes                  uint16
+	BitCount                uint16
+	Compression             uint32
+	SizeImage               uint32
+	XPelsPerMeter           int32
+	YPelsPerMeter           int32
+	ClrUsed                 uint32
+	ClrImportant            uint32
+	Red, Green, Blue, Alpha uint32
+	Endpoints               [3]uint32
+	Gamma                   [3]uint32
+}
+
 type _BITMAPINFOHEADER struct {
 	Size          uint32
 	Width         int32
@@ -48,7 +65,7 @@ type _RGBQUAD struct {
 }
 
 type _BITMAPINFO struct {
-	Header _BITMAPINFOHEADER
+	Header BitmapInfoV4
 	Colors [1]_RGBQUAD
 }
 
@@ -111,6 +128,7 @@ const (
 
 const (
 	_BI_RGB         = 0
+	_BI_BITFIELDS   = 3
 	_DIB_RGB_COLORS = 0
 
 	_AC_SRC_OVER  = 0x00

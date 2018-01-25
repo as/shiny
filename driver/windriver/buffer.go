@@ -11,8 +11,7 @@ import (
 	"image/draw"
 	"sync"
 	"syscall"
-
-	"github.com/as/shiny/driver/internal/swizzle"
+	//	"github.com/as/shiny/driver/internal/swizzle"
 )
 
 type bufferImpl struct {
@@ -31,43 +30,8 @@ func (b *bufferImpl) Size() image.Point       { return b.size }
 func (b *bufferImpl) Bounds() image.Rectangle { return image.Rectangle{Max: b.size} }
 func (b *bufferImpl) RGBA() *image.RGBA       { return &b.rgba }
 
-func (b *bufferImpl) preUpload() {
-	// Check that the program hasn't tried to modify the rgba field via the
-	// pointer returned by the bufferImpl.RGBA method. This check doesn't catch
-	// 100% of all cases; it simply tries to detect some invalid uses of a
-	// screen.Buffer such as:
-	//	*buffer.RGBA() = anotherImageRGBA
-	if len(b.buf) != 0 && len(b.rgba.Pix) != 0 && &b.buf[0] != &b.rgba.Pix[0] {
-		panic("windriver: invalid Buffer.RGBA modification")
-	}
-
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	if b.released {
-		panic("windriver: Buffer.Upload called after Buffer.Release")
-	}
-	if b.nUpload == 0 {
-		swizzle.BGRA(b.buf)
-	}
-	b.nUpload++
-}
-
-func (b *bufferImpl) postUpload() {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	b.nUpload--
-	if b.nUpload != 0 {
-		return
-	}
-
-	if b.released {
-		go b.cleanUp()
-	} else {
-		swizzle.BGRA(b.buf)
-	}
-}
+//func (b *bufferImpl) preUpload() {}
+//func (b *bufferImpl) postUpload() {}
 
 func (b *bufferImpl) Release() {
 	b.mu.Lock()
@@ -93,9 +57,5 @@ func (b *bufferImpl) cleanUp() {
 }
 
 func (b *bufferImpl) blitToDC(dc syscall.Handle, dp image.Point, sr image.Rectangle) error {
-	b.preUpload()
-	defer b.postUpload()
-
-	dr := sr.Add(dp.Sub(sr.Min))
-	return copyBitmapToDC(dc, dr, b.hbitmap, sr, draw.Src)
+	return copyBitmapToDC(dc, sr.Add(dp.Sub(sr.Min)), b.hbitmap, sr, draw.Src)
 }
