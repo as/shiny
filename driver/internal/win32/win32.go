@@ -447,9 +447,6 @@ func SendMessage(hwnd syscall.Handle, uMsg uint32, wParam uintptr, lParam uintpt
 var mainCallback func()
 
 func Main(f func()) (retErr error) {
-	// It does not matter which OS thread we are on.
-	// All that matters is that we confine all UI operations
-	// to the thread that created the respective window.
 	runtime.LockOSThread()
 
 	if err := initCommon(); err != nil {
@@ -459,11 +456,7 @@ func Main(f func()) (retErr error) {
 	if err := initScreenWindow(); err != nil {
 		return err
 	}
-	defer func() {
-		// TODO(andlabs): log an error if this fails?
-		_DestroyWindow(screenHWND)
-		// TODO(andlabs): unregister window class
-	}()
+	defer _DestroyWindow(screenHWND)
 
 	if err := initWindowClass(); err != nil {
 		return err
