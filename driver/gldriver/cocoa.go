@@ -32,7 +32,6 @@ import "C"
 import (
 	"errors"
 	"fmt"
-	"log"
 	"runtime"
 	"unsafe"
 
@@ -52,18 +51,6 @@ const useLifecycler = true
 const handleSizeEventsAtChannelReceive = false
 
 var initThreadID C.uint64_t
-
-func init() {
-	// Lock the goroutine responsible for initialization to an OS thread.
-	// This means the goroutine running main (and calling startDriver below)
-	// is locked to the OS thread that started the program. This is
-	// necessary for the correct delivery of Cocoa events to the process.
-	//
-	// A discussion on this topic:
-	// https://groups.google.com/forum/#!msg/golang-nuts/IiWZ2hUuLDA/SNKYYZBelsYJ
-	runtime.LockOSThread()
-	initThreadID = C.threadID()
-}
 
 func newWindow(opts *screen.NewWindowOptions) (uintptr, error) {
 	width, height := optsSize(opts)
@@ -99,10 +86,9 @@ func closeWindow(id uintptr) {
 var mainCallback func(screen.Screen)
 
 func main(f func(screen.Screen)) error {
-	if tid := C.threadID(); tid != initThreadID {
-		log.Fatalf("gldriver.Main called on thread %d, but gldriver.init ran on %d", tid, initThreadID)
-	}
 
+	runtime.LockOSThread()
+	initThreadID = C.threadID()
 	mainCallback = f
 	C.startDriver()
 	return nil
