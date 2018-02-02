@@ -84,3 +84,8 @@ func benchmarkBGRA(b *testing.B, f func([]byte)) {
 
 func BenchmarkBGRA(b *testing.B)       { benchmarkBGRA(b, BGRA) }
 func BenchmarkPureGoBGRA(b *testing.B) { benchmarkBGRA(b, pureGoBGRA) }
+func BenchmarkBGRA256(b *testing.B)    { benchmarkBGRA(b, bgra256) }
+func BenchmarkBGRA64(b *testing.B)     { benchmarkBGRA(b, bgra64) }
+func BenchmarkBGRA32(b *testing.B)     { benchmarkBGRA(b, bgra32) }
+func BenchmarkBGRA16(b *testing.B)     { benchmarkBGRA(b, bgra16) }
+func BenchmarkBGRA4(b *testing.B)      { benchmarkBGRA(b, bgra4) }

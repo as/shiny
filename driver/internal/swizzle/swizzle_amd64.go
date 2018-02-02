@@ -8,10 +8,15 @@ package swizzle
 //
 // Note that this is SSSE3, not SSE3.
 func haveSSSE3() bool
+func haveAVX2() bool
 
+var useBGRA32 = haveAVX2()
 var useBGRA16 = haveSSSE3()
 
 const useBGRA4 = true
 
+func bgra256(p []byte)
+func bgra64(p []byte)
+func bgra32(p []byte)
 func bgra16(p []byte)
 func bgra4(p []byte)

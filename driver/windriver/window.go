@@ -10,15 +10,9 @@ package windriver
 
 import (
 	"fmt"
-	"image"
-	"image/color"
-	"image/draw"
-	"math"
-	"syscall"
-	"unsafe"
-
 	"github.com/as/shiny/driver/internal/drawer"
 	"github.com/as/shiny/driver/internal/event"
+	"github.com/as/shiny/driver/internal/swizzle"
 	"github.com/as/shiny/driver/internal/win32"
 	"github.com/as/shiny/screen"
 	"golang.org/x/image/math/f64"
@@ -27,6 +21,12 @@ import (
 	"golang.org/x/mobile/event/mouse"
 	"golang.org/x/mobile/event/paint"
 	"golang.org/x/mobile/event/size"
+	"image"
+	"image/color"
+	"image/draw"
+	"math"
+	"syscall"
+	"unsafe"
 )
 
 type windowImpl struct {
@@ -45,13 +45,15 @@ func (w *windowImpl) Release() {
 func (w *windowImpl) Upload(dp image.Point, src screen.Buffer, sr image.Rectangle) {
 	//	src.(*bufferImpl).preUpload()
 	//	defer src.(*bufferImpl).postUpload()
-
+	b := src.(*bufferImpl).buf
+	swizzle.BGRA(b)
 	w.execCmd(&cmd{
 		id:     cmdUpload,
 		dp:     dp,
 		buffer: src.(*bufferImpl),
 		sr:     sr,
 	})
+	swizzle.BGRA(b)
 }
 
 func (w *windowImpl) Fill(dr image.Rectangle, src color.Color, op draw.Op) {

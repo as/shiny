@@ -11,7 +11,6 @@ import (
 	"image/draw"
 	"sync"
 	"syscall"
-	//	"github.com/as/shiny/driver/internal/swizzle"
 )
 
 type bufferImpl struct {
@@ -57,5 +56,6 @@ func (b *bufferImpl) cleanUp() {
 }
 
 func (b *bufferImpl) blitToDC(dc syscall.Handle, dp image.Point, sr image.Rectangle) error {
-	return copyBitmapToDC(dc, sr.Add(dp.Sub(sr.Min)), b.hbitmap, sr, draw.Src)
+	err := copyBitmapToDC(dc, sr.Add(dp.Sub(sr.Min)), b.hbitmap, sr, draw.Src)
+	return err
 }

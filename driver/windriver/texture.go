@@ -7,16 +7,15 @@
 package windriver
 
 import (
-	"errors"
+	"github.com/as/shiny/driver/internal/swizzle"
+	"github.com/as/shiny/driver/internal/win32"
+	"github.com/as/shiny/screen"
 	"image"
 	"image/color"
 	"image/draw"
 	"sync"
 	"syscall"
 	"unsafe"
-
-	"github.com/as/shiny/driver/internal/win32"
-	"github.com/as/shiny/screen"
 )
 
 type textureImpl struct {
@@ -125,12 +124,9 @@ func (t *textureImpl) Size() image.Point {
 }
 
 func (t *textureImpl) Upload(dp image.Point, src screen.Buffer, sr image.Rectangle) {
-	err := t.update(func(dc syscall.Handle) error {
-		return src.(*bufferImpl).blitToDC(dc, dp, sr)
-	})
-	if err != nil {
-		panic(err) // TODO handle error
-	}
+	b := src.(*bufferImpl).buf
+	swizzle.BGRA(b)
+	src.(*bufferImpl).blitToDC(t.dc, dp, sr)
 }
 
 // update prepares texture t for update and executes f over texture device
@@ -139,23 +135,19 @@ func (t *textureImpl) update(f func(dc syscall.Handle) error) (retErr error) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	if t.released {
-		return errors.New("windriver: Texture.Upload called after Texture.Release")
-	}
-
 	// Select t.bitmap into t.dc, so our drawing gets recorded
 	// into t.bitmap and not into 1x1 default bitmap created
 	// during CreateCompatibleDC call.
-	prev, err := _SelectObject(t.dc, t.bitmap)
+	_, err := _SelectObject(t.dc, t.bitmap)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_, err2 := _SelectObject(t.dc, prev)
-		if retErr == nil {
-			retErr = err2
-		}
-	}()
+	//	defer func() {
+	//		_, err2 := _SelectObject(t.dc, prev)
+	//		if retErr == nil {
+	//			retErr = err2
+	//		}
+	//	}()
 
 	return f(t.dc)
 }
