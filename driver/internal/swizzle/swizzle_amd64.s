@@ -1,11 +1,17 @@
+// Copyright 2018 (as). All rights reserved. Added bgra32 for CPUs
+// with AVX2.
+
 // Copyright 2015 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// TODO(as): Looks pretty elaborate; might this outperform
-// NT's bitfields? (personally wouldn't be surprised if it did)
-
 #include "textflag.h"
+
+DATA ·AVX2_swizzletab<>+0x00(SB)/8, $0x0704050603000102
+DATA ·AVX2_swizzletab<>+0x08(SB)/8, $0x0f0c0d0e0b08090a
+DATA ·AVX2_swizzletab<>+0x10(SB)/8, $0x1714151613101112
+DATA ·AVX2_swizzletab<>+0x18(SB)/8, $0x0f0c0d0e0b08090a
+GLOBL ·AVX2_swizzletab<>(SB), (NOPTR+RODATA), $32
 
 // func haveSSSE3() bool
 TEXT ·haveSSSE3(SB),NOSPLIT,$0
@@ -14,6 +20,120 @@ TEXT ·haveSSSE3(SB),NOSPLIT,$0
 	SHRQ	$9, CX
 	ANDQ	$1, CX
 	MOVB	CX, ret+0(FP)
+	RET
+
+// func haveAVX2() bool
+TEXT ·haveAVX2(SB),NOSPLIT,$0
+	MOVQ	$7, AX
+	MOVQ	$0, CX
+	CPUID
+	SHRQ	$5, BX
+	ANDQ	$1, BX
+	MOVB	BX, ret+0(FP)
+	RET
+
+// func bgra256(p []byte)
+TEXT ·bgra256(SB),NOSPLIT,$0-24
+	MOVQ	p+0(FP), SI
+	MOVQ	len+8(FP), DI
+
+
+	// Sanity check that len is a multiple of 64.
+	MOVQ	DI, AX
+	ANDQ	$63, AX
+	JNZ	done
+
+
+	VMOVDQU ·AVX2_swizzletab<>(SB), Y0
+	ADDQ	SI, DI
+loop:
+	CMPQ	SI, DI
+	JEQ	done
+	
+	VMOVDQU 	(0*32)(SI),Y1 
+	VMOVDQU 	(4*32)(SI),Y5 
+	VMOVDQU 	(1*32)(SI),Y2 
+	VMOVDQU 	(7*32)(SI),Y8 
+	VMOVDQU 	(2*32)(SI),Y3 
+	VMOVDQU 	(6*32)(SI),Y7 
+	VMOVDQU 	(3*32)(SI),Y4 
+	VMOVDQU 	(5*32)(SI),Y6 
+	VPSHUFB Y0, Y1,  Y1
+	VPSHUFB Y0, Y2,  Y2
+	VPSHUFB Y0, Y3,  Y3
+	VPSHUFB Y0, Y4,  Y4
+	VPSHUFB Y0, Y5,  Y5
+	VPSHUFB Y0, Y6,  Y6
+	VPSHUFB Y0, Y7,  Y7
+	VPSHUFB Y0, Y8,  Y8
+	VMOVDQU	Y1, (0*32)(SI)
+	VMOVDQU	Y2, (1*32)(SI)
+	VMOVDQU	Y3, (2*32)(SI)
+	VMOVDQU	Y4, (3*32)(SI)
+	VMOVDQU	Y5, (4*32)(SI)
+	VMOVDQU	Y6, (5*32)(SI)
+	VMOVDQU	Y7, (6*32)(SI)
+	VMOVDQU	Y8, (7*32)(SI)
+
+	ADDQ	$256, SI
+	JMP	loop
+done:
+	RET
+
+// func bgra64(p []byte)
+TEXT ·bgra64(SB),NOSPLIT,$0-24
+	MOVQ	p+0(FP), SI
+	MOVQ	len+8(FP), DI
+
+
+	// Sanity check that len is a multiple of 64.
+	MOVQ	DI, AX
+	ANDQ	$63, AX
+	JNZ	done
+
+
+	VMOVDQU ·AVX2_swizzletab<>(SB), Y0
+	ADDQ	SI, DI
+loop:
+	CMPQ	SI, DI
+	JEQ	done
+	
+	VMOVDQU 	(0*32)(SI),Y1 
+	VMOVDQU 	(1*32)(SI),Y2 
+	VPSHUFB Y0, Y1,  Y1
+	VPSHUFB Y0, Y2,  Y2
+	VMOVDQU	Y1, (0*32)(SI)
+	VMOVDQU	Y2, (1*32)(SI)
+
+	ADDQ	$64, SI
+	JMP	loop
+done:
+	RET
+
+// func bgra32(p []byte)
+TEXT ·bgra32(SB),NOSPLIT,$0-24
+	MOVQ	p+0(FP), SI
+	MOVQ	len+8(FP), DI
+
+	// Sanity check that len is a multiple of 32.
+	MOVQ	DI, AX
+	ANDQ	$31, AX
+	JNZ	done
+
+
+	VMOVDQU ·AVX2_swizzletab<>(SB), Y0
+	ADDQ	SI, DI
+loop:
+	CMPQ	SI, DI
+	JEQ	done
+	
+	VMOVDQU 	(SI),Y1 
+	VPSHUFB Y0, Y1,  Y1
+	VMOVDQU	Y1, (SI)
+
+	ADDQ	$32, SI
+	JMP	loop
+done:
 	RET
 
 // func bgra16(p []byte)
@@ -57,11 +177,6 @@ done:
 TEXT ·bgra4(SB),NOSPLIT,$0-24
 	MOVQ	p+0(FP), SI
 	MOVQ	len+8(FP), DI
-
-	// Sanity check that len is a multiple of 4.
-	MOVQ	DI, AX
-	ANDQ	$3, AX
-	JNZ	done
 
 	ADDQ	SI, DI
 loop:
