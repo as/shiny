@@ -169,11 +169,6 @@ func sendSize(hwnd syscall.Handle) {
 	})
 }
 
-func sendClose(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
-	LifecycleEvent(hwnd, lifecycle.StageDead)
-	return 0
-}
-
 type Lifecycle = lifecycle.Event
 type Scroll = mouse.Event
 type Mouse = mouse.Event
@@ -188,6 +183,11 @@ var Dev = &screen.Dev{
 	Size:      make(chan Size, 1),
 	Paint:     make(chan Paint, 1),
 	Lifecycle: make(chan Lifecycle, 1),
+}
+
+func sendClose(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
+	LifecycleEvent(hwnd, lifecycle.StageDead)
+	return 0
 }
 
 func sendScrollEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
@@ -248,16 +248,6 @@ func sendMouseEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (l
 		e.Direction = mouse.DirPress
 	case _WM_LBUTTONUP, _WM_MBUTTONUP, _WM_RBUTTONUP:
 		e.Direction = mouse.DirRelease
-	case _WM_MOUSEWHEEL:
-		e.Direction = mouse.DirStep
-		// Convert from screen to window coordinates.
-		p := _POINT{
-			int32(e.X),
-			int32(e.Y),
-		}
-		_ScreenToClient(hwnd, &p)
-		e.X = float32(p.X)
-		e.Y = float32(p.Y)
 	default:
 		panic("sendMouseEvent() called on non-mouse message")
 	}
@@ -270,36 +260,6 @@ func sendMouseEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (l
 		e.Button = mouse.ButtonMiddle
 	case _WM_RBUTTONDOWN, _WM_RBUTTONUP:
 		e.Button = mouse.ButtonRight
-	case _WM_MOUSEWHEEL:
-		// TODO: handle horizontal scrolling
-		delta := _GET_WHEEL_DELTA_WPARAM(wParam) / _WHEEL_DELTA
-		switch {
-		case delta > 0:
-			e.Button = mouse.ButtonWheelUp
-		case delta < 0:
-			e.Button = mouse.ButtonWheelDown
-			delta = -delta
-		default:
-			return
-		}
-	Loop:
-		for {
-			select {
-			case Dev.Scroll <- e:
-				break Loop
-			default:
-				select {
-				case <-Dev.Scroll:
-				default:
-				}
-			}
-		}
-
-		//		for delta > 0 {
-		//			MouseEvent(hwnd, e)
-		//			delta--
-		//		}
-		return
 	}
 
 	select {
@@ -310,7 +270,6 @@ func sendMouseEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (l
 		}
 		Dev.Mouse <- e
 	}
-	//	MouseEvent(hwnd, e)
 
 	return 0
 }
@@ -349,7 +308,10 @@ var (
 )
 
 func sendPaint(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
-	PaintEvent(hwnd, paint.Event{})
+	select {
+	case Dev.Paint <- Paint{}:
+	default:
+	}
 	return _DefWindowProc(hwnd, uMsg, wParam, lParam)
 }
 
@@ -405,7 +367,8 @@ var windowMsgs = map[uint32]func(hwnd syscall.Handle, uMsg uint32, wParam, lPara
 	_WM_RBUTTONDOWN: sendMouseEvent,
 	_WM_RBUTTONUP:   sendMouseEvent,
 	_WM_MOUSEMOVE:   sendMouseEvent,
-	_WM_MOUSEWHEEL:  sendMouseEvent,
+
+	_WM_MOUSEWHEEL: sendScrollEvent,
 
 	_WM_KEYDOWN: sendKeyEvent,
 	_WM_KEYUP:   sendKeyEvent,

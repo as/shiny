@@ -225,7 +225,7 @@ type Dev struct {
 
 // Window is a top-level, double-buffered GUI window.
 type Window interface {
-	
+
 	// Release closes the window.
 	//
 	// The behavior of the Window after Release, whether calling its methods or

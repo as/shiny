@@ -344,8 +344,8 @@ func sendKeyEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lRe
 	default:
 		panic(fmt.Sprintf("win32: unexpected key message: %d", uMsg))
 	}
-	Dev.Key<-e
+	Dev.Key <- e
 
-//	KeyEvent(hwnd, e)
+	//	KeyEvent(hwnd, e)
 	return 0
 }

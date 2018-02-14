@@ -38,7 +38,7 @@ type windowImpl struct {
 	lifecycleStage lifecycle.Stage
 }
 
-func (w *windowImpl) Device() *screen.Dev{
+func (w *windowImpl) Device() *screen.Dev {
 	return win32.Dev
 }
 
