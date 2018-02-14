@@ -61,6 +61,11 @@ import (
 	"unicode/utf8"
 
 	"golang.org/x/image/math/f64"
+	"golang.org/x/mobile/event/key"
+	"golang.org/x/mobile/event/lifecycle"
+	"golang.org/x/mobile/event/mouse"
+	"golang.org/x/mobile/event/paint"
+	"golang.org/x/mobile/event/size"
 )
 
 // TODO: specify image format (Alpha or Gray, not just RGBA) for NewBuffer
@@ -194,14 +199,33 @@ type EventDeque interface {
 	// events, of those types above or of other types, via Send or SendFirst.
 	NextEvent() interface{}
 
+	Device() *Dev
+
 	// TODO: LatestLifecycleEvent? Is that still worth it if the
 	// lifecycle.Event struct type loses its DrawContext field?
 
 	// TODO: LatestSizeEvent?
 }
 
+type Lifecycle = lifecycle.Event
+type Scroll = mouse.Event
+type Mouse = mouse.Event
+type Key = key.Event
+type Size = size.Event
+type Paint = paint.Event
+
+type Dev struct {
+	Lifecycle chan Lifecycle
+	Scroll    chan Scroll
+	Mouse     chan Mouse
+	Key       chan Key
+	Size      chan Size
+	Paint     chan Paint
+}
+
 // Window is a top-level, double-buffered GUI window.
 type Window interface {
+	
 	// Release closes the window.
 	//
 	// The behavior of the Window after Release, whether calling its methods or

@@ -174,6 +174,66 @@ func sendClose(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResul
 	return 0
 }
 
+type Lifecycle = lifecycle.Event
+type Scroll = mouse.Event
+type Mouse = mouse.Event
+type Key = key.Event
+type Size = size.Event
+type Paint = paint.Event
+
+var Dev = &screen.Dev{
+	Scroll:    make(chan Scroll, 100),
+	Mouse:     make(chan Mouse, 1),
+	Key:       make(chan Key, 25),
+	Size:      make(chan Size, 1),
+	Paint:     make(chan Paint, 1),
+	Lifecycle: make(chan Lifecycle, 1),
+}
+
+func sendScrollEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
+	if uMsg != _WM_MOUSEWHEEL {
+		panic("sendScrollEvent: not a scroll message")
+	}
+	e := mouse.Event{
+		X:         float32(_GET_X_LPARAM(lParam)),
+		Y:         float32(_GET_Y_LPARAM(lParam)),
+		Modifiers: keyModifiers(),
+	}
+	e.Direction = mouse.DirStep
+	// Convert from screen to window coordinates.
+	p := _POINT{
+		int32(e.X),
+		int32(e.Y),
+	}
+	_ScreenToClient(hwnd, &p)
+	e.X = float32(p.X)
+	e.Y = float32(p.Y)
+	delta := _GET_WHEEL_DELTA_WPARAM(wParam) / _WHEEL_DELTA
+	switch {
+	case delta > 0:
+		e.Button = mouse.ButtonWheelUp
+	case delta < 0:
+		e.Button = mouse.ButtonWheelDown
+		delta = -delta
+	default:
+		return
+	}
+Loop:
+	for {
+		select {
+		case Dev.Scroll <- e:
+			break Loop
+		default:
+			select {
+			case <-Dev.Scroll:
+			default:
+			}
+		}
+	}
+	return
+
+}
+
 func sendMouseEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
 	e := mouse.Event{
 		X:         float32(_GET_X_LPARAM(lParam)),
@@ -189,11 +249,7 @@ func sendMouseEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (l
 	case _WM_LBUTTONUP, _WM_MBUTTONUP, _WM_RBUTTONUP:
 		e.Direction = mouse.DirRelease
 	case _WM_MOUSEWHEEL:
-		// TODO: On a trackpad, a scroll can be a drawn-out affair with a
-		// distinct beginning and end. Should the intermediate events be
-		// DirNone?
 		e.Direction = mouse.DirStep
-
 		// Convert from screen to window coordinates.
 		p := _POINT{
 			int32(e.X),
@@ -208,7 +264,6 @@ func sendMouseEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (l
 
 	switch uMsg {
 	case _WM_MOUSEMOVE:
-		// No-op.
 	case _WM_LBUTTONDOWN, _WM_LBUTTONUP:
 		e.Button = mouse.ButtonLeft
 	case _WM_MBUTTONDOWN, _WM_MBUTTONUP:
@@ -227,14 +282,35 @@ func sendMouseEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (l
 		default:
 			return
 		}
-		for delta > 0 {
-			MouseEvent(hwnd, e)
-			delta--
+	Loop:
+		for {
+			select {
+			case Dev.Scroll <- e:
+				break Loop
+			default:
+				select {
+				case <-Dev.Scroll:
+				default:
+				}
+			}
 		}
+
+		//		for delta > 0 {
+		//			MouseEvent(hwnd, e)
+		//			delta--
+		//		}
 		return
 	}
 
-	MouseEvent(hwnd, e)
+	select {
+	case Dev.Mouse <- e:
+	default:
+		if e.Button == mouse.ButtonNone {
+			break
+		}
+		Dev.Mouse <- e
+	}
+	//	MouseEvent(hwnd, e)
 
 	return 0
 }

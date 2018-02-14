@@ -38,6 +38,10 @@ type windowImpl struct {
 	lifecycleStage lifecycle.Stage
 }
 
+func (w *windowImpl) Device() *screen.Dev{
+	return win32.Dev
+}
+
 func (w *windowImpl) Release() {
 	win32.Release(w.hwnd)
 }
