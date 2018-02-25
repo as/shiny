@@ -160,13 +160,16 @@ func sendSize(hwnd syscall.Handle) {
 	height := int(r.Bottom - r.Top)
 
 	// TODO(andlabs): don't assume that PixelsPerPt == 1
-	SizeEvent(hwnd, size.Event{
+	select {
+	case Dev.Size <- size.Event{
 		WidthPx:     width,
 		HeightPx:    height,
 		WidthPt:     geom.Pt(width),
 		HeightPt:    geom.Pt(height),
 		PixelsPerPt: 1,
-	})
+	}:
+	default:
+	}
 }
 
 type Lifecycle = lifecycle.Event
@@ -181,8 +184,8 @@ var Dev = &screen.Dev{
 	Mouse:     make(chan Mouse, 1),
 	Key:       make(chan Key, 25),
 	Size:      make(chan Size, 1),
-	Paint:     make(chan Paint, 1),
-	Lifecycle: make(chan Lifecycle, 1),
+	Paint:     make(chan Paint, 25),
+	Lifecycle: make(chan Lifecycle, 25),
 }
 
 func sendClose(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {

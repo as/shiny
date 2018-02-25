@@ -39,12 +39,13 @@ type Texture interface {
 	Uploader
 }
 
-// EventDeque is an infinitely buffered double-ended queue of events.
-type EventDeque interface {
-	Send(event interface{})
-	SendFirst(event interface{})
-	NextEvent() interface{}
+// Window is a top-level, double-buffered GUI window.
+type Window interface {
 	Device() *Dev
+	Release()
+	Uploader
+	Drawer
+	Publish() PublishResult
 }
 
 type (
@@ -63,15 +64,6 @@ type Dev struct {
 	Key       chan Key
 	Size      chan Size
 	Paint     chan Paint
-}
-
-// Window is a top-level, double-buffered GUI window.
-type Window interface {
-	Release()
-	EventDeque
-	Uploader
-	Drawer
-	Publish() PublishResult
 }
 
 // PublishResult is the result of an Window.Publish call.
