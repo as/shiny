@@ -21,6 +21,5 @@ import (
 // specific libraries require being on 'the main thread'. It returns when f
 // returns.
 func Main(f func(screen.Screen)) {
-	f(errscreen.Stub(fmt.Errorf(
-		"windriver: unsupported GOOS/GOARCH %s/%s", runtime.GOOS, runtime.GOARCH)))
+	f(errscreen.Stub(fmt.Errorf("windriver: unsupported GOOS/GOARCH %s/%s", runtime.GOOS, runtime.GOARCH)))
 }

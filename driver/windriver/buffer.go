@@ -28,10 +28,6 @@ type bufferImpl struct {
 func (b *bufferImpl) Size() image.Point       { return b.size }
 func (b *bufferImpl) Bounds() image.Rectangle { return image.Rectangle{Max: b.size} }
 func (b *bufferImpl) RGBA() *image.RGBA       { return &b.rgba }
-
-//func (b *bufferImpl) preUpload() {}
-//func (b *bufferImpl) postUpload() {}
-
 func (b *bufferImpl) Release() {
 	b.mu.Lock()
 	defer b.mu.Unlock()

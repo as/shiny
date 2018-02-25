@@ -6,8 +6,6 @@
 
 package windriver
 
-// TODO: implement a back buffer.
-
 import (
 	"fmt"
 	"github.com/as/shiny/driver/internal/drawer"
@@ -47,8 +45,6 @@ func (w *windowImpl) Release() {
 }
 
 func (w *windowImpl) Upload(dp image.Point, src screen.Buffer, sr image.Rectangle) {
-	//	src.(*bufferImpl).preUpload()
-	//	defer src.(*bufferImpl).postUpload()
 	b := src.(*bufferImpl).buf
 	swizzle.BGRA(b)
 	w.execCmd(&cmd{
