@@ -184,8 +184,8 @@ var Dev = &screen.Dev{
 	Mouse:     make(chan Mouse, 1),
 	Key:       make(chan Key, 25),
 	Size:      make(chan Size, 1),
-	Paint:     make(chan Paint, 25),
-	Lifecycle: make(chan Lifecycle, 25),
+	Paint:     make(chan Paint, 1),
+	Lifecycle: make(chan Lifecycle, 1),
 }
 
 func sendClose(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {

@@ -185,9 +185,12 @@ func lifecycleEvent(hwnd syscall.Handle, to lifecycle.Stage) {
 	if w.lifecycleStage == to {
 		return
 	}
-	w.Device().Lifecycle <- lifecycle.Event{
+	select {
+	default:
+	case w.Device().Lifecycle <- lifecycle.Event{
 		From: w.lifecycleStage,
 		To:   to,
+	}:
 	}
 	w.lifecycleStage = to
 }
