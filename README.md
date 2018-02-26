@@ -1,6 +1,6 @@
 # Shiny
 
-This is an incompatible fork of Shiny that strips away the event-driven constructs, replacing them with channels and CSP. This feature is in the 'conccurent' branch.
+This is an incompatible fork of Shiny that strips away the event-driven constructs, replacing them with channels and CSP. This feature is in the 'concurrent' branch.
 
 # Changes
 
