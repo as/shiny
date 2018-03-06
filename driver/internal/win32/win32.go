@@ -158,18 +158,13 @@ func sendSize(hwnd syscall.Handle) {
 
 	width := int(r.Right - r.Left)
 	height := int(r.Bottom - r.Top)
-
-	// TODO(andlabs): don't assume that PixelsPerPt == 1
-	select {
-	case Dev.Size <- size.Event{
+	screen.SendSize(size.Event{
 		WidthPx:     width,
 		HeightPx:    height,
 		WidthPt:     geom.Pt(width),
 		HeightPt:    geom.Pt(height),
 		PixelsPerPt: 1,
-	}:
-	default:
-	}
+	})
 }
 
 type Lifecycle = lifecycle.Event
@@ -178,15 +173,6 @@ type Mouse = mouse.Event
 type Key = key.Event
 type Size = size.Event
 type Paint = paint.Event
-
-var Dev = &screen.Dev{
-	Scroll:    make(chan Scroll, 100),
-	Mouse:     make(chan Mouse, 1),
-	Key:       make(chan Key, 25),
-	Size:      make(chan Size, 1),
-	Paint:     make(chan Paint, 1),
-	Lifecycle: make(chan Lifecycle, 1),
-}
 
 func sendClose(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
 	LifecycleEvent(hwnd, lifecycle.StageDead)
@@ -221,20 +207,8 @@ func sendScrollEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (
 	default:
 		return
 	}
-Loop:
-	for {
-		select {
-		case Dev.Scroll <- e:
-			break Loop
-		default:
-			select {
-			case <-Dev.Scroll:
-			default:
-			}
-		}
-	}
+	screen.SendScroll(e)
 	return
-
 }
 
 func sendMouseEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
@@ -265,14 +239,7 @@ func sendMouseEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (l
 		e.Button = mouse.ButtonRight
 	}
 
-	select {
-	case Dev.Mouse <- e:
-	default:
-		if e.Button == mouse.ButtonNone {
-			break
-		}
-		Dev.Mouse <- e
-	}
+	screen.SendMouse(e)
 
 	return 0
 }
@@ -305,16 +272,10 @@ var (
 	SizeEvent      func(hwnd syscall.Handle, e size.Event)
 	KeyEvent       func(hwnd syscall.Handle, e key.Event)
 	LifecycleEvent func(hwnd syscall.Handle, e lifecycle.Stage)
-
-	// TODO: use the github.com/as/shiny/driver/internal/lifecycler package
-	// instead of or together with the LifecycleEvent callback?
 )
 
 func sendPaint(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
-	select {
-	case Dev.Paint <- Paint{}:
-	default:
-	}
+	screen.SendPaint(Paint{})
 	return _DefWindowProc(hwnd, uMsg, wParam, lParam)
 }
 

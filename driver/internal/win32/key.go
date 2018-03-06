@@ -7,6 +7,7 @@
 package win32
 
 import (
+	"github.com/as/shiny/screen"
 	"fmt"
 	"syscall"
 	"unicode/utf16"
@@ -344,7 +345,7 @@ func sendKeyEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lRe
 	default:
 		panic(fmt.Sprintf("win32: unexpected key message: %d", uMsg))
 	}
-	Dev.Key <- e
+	screen.Dev.Key <- e
 
 	//	KeyEvent(hwnd, e)
 	return 0

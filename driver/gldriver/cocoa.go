@@ -47,9 +47,6 @@ import (
 
 const useLifecycler = true
 
-// TODO: change this to true, after manual testing on OS X.
-const handleSizeEventsAtChannelReceive = false
-
 var initThreadID C.uint64_t
 
 func newWindow(opts *screen.NewWindowOptions) (uintptr, error) {
@@ -181,13 +178,6 @@ func setGeom(id uintptr, ppp float32, widthPx, heightPx int) {
 		HeightPt:    geom.Pt(float32(heightPx) / ppp),
 		PixelsPerPt: ppp,
 	}
-
-	if !handleSizeEventsAtChannelReceive {
-		w.szMu.Lock()
-		w.sz = sz
-		w.szMu.Unlock()
-	}
-
 	w.Send(sz)
 }
 
@@ -197,13 +187,6 @@ func windowClosing(id uintptr) {
 }
 
 func sendWindowEvent(id uintptr, e interface{}) {
-	theScreen.mu.Lock()
-	w := theScreen.windows[id]
-	theScreen.mu.Unlock()
-
-	if w == nil {
-		return // closing window
-	}
 	w.Send(e)
 }
 
@@ -257,52 +240,40 @@ func cocoaMouseButton(button int32) mouse.Button {
 	}
 }
 
-//export mouseEvent
-func mouseEvent(id uintptr, x, y, dx, dy float32, ty, button int32, flags uint32) {
-	cmButton := mouse.ButtonNone
-	switch ty {
-	default:
-		cmButton = cocoaMouseButton(button)
-	case C.NSMouseMoved, C.NSLeftMouseDragged, C.NSRightMouseDragged, C.NSOtherMouseDragged:
-		// No-op.
-	case C.NSScrollWheel:
-		// Note that the direction of scrolling is inverted by default
-		// on OS X by the "natural scrolling" setting. At the Cocoa
-		// level this inversion is applied to trackpads and mice behind
-		// the scenes, and the value of dy goes in the direction the OS
-		// wants scrolling to go.
-		//
-		// This means the same trackpad/mouse motion on OS X and Linux
-		// can produce wheel events in opposite directions, but the
-		// direction matches what other programs on the OS do.
-		//
-		// If we wanted to expose the phsyical device motion in the
-		// event we could use [NSEvent isDirectionInvertedFromDevice]
-		// to know if "natural scrolling" is enabled.
-		//
-		// TODO: On a trackpad, a scroll can be a drawn-out affair with a
-		// distinct beginning and end. Should the intermediate events be
-		// DirNone?
-		//
-		// TODO: handle horizontal scrolling
+func scrollEvent(id uintptr, x, y, dx, dy float32, ty, button int32, flags uint32) {
 		button := mouse.ButtonWheelUp
 		if dy < 0 {
 			dy = -dy
 			button = mouse.ButtonWheelDown
 		}
-		e := mouse.Event{
+		screen.SendScroll(mouse.Event{
 			X:         x,
 			Y:         y,
 			Button:    button,
 			Direction: mouse.DirStep,
 			Modifiers: cocoaMods(flags),
-		}
-		for delta := int(dy); delta != 0; delta-- {
-			sendWindowEvent(id, e)
-		}
+		})
+		return
+}
+
+//export mouseEvent
+func mouseEvent(id uintptr, x, y, dx, dy float32, ty, button int32, flags uint32) {
+	if ty == C.NSScrollWheel{
+		scrollEvent(id, x, y, dx, dy float32, ty, button, flags)
 		return
 	}
-	sendWindowEvent(id, mouse.Event{
+	
+	cmButton := mouse.ButtonNone
+	switch ty {
+	default:
+		cmButton = cocoaMouseButton(button)
+	case C.NSMouseMoved, 
+		C.NSLeftMouseDragged, 
+		C.NSRightMouseDragged, 
+		C.NSOtherMouseDragged:
+		// No-op.
+	}
+	screen.SendMouse(mouse.Event{
 		X:         x,
 		Y:         y,
 		Button:    cmButton,
@@ -313,7 +284,7 @@ func mouseEvent(id uintptr, x, y, dx, dy float32, ty, button int32, flags uint32
 
 //export keyEvent
 func keyEvent(id uintptr, runeVal rune, dir uint8, code uint16, flags uint32) {
-	sendWindowEvent(id, key.Event{
+	screen.SendKey(key.Event{
 		Rune:      cocoaRune(runeVal),
 		Direction: key.Direction(dir),
 		Code:      cocoaKeyCode(code),
@@ -337,13 +308,6 @@ func flagEvent(id uintptr, flags uint32) {
 var lastFlags uint32
 
 func sendLifecycle(id uintptr, setter func(*lifecycler.State, bool), val bool) {
-	theScreen.mu.Lock()
-	w := theScreen.windows[id]
-	theScreen.mu.Unlock()
-
-	if w == nil {
-		return
-	}
 	setter(&w.lifecycler, val)
 	w.lifecycler.SendEvent(w, w.glctx)
 }

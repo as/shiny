@@ -41,7 +41,7 @@ type Texture interface {
 
 // Window is a top-level, double-buffered GUI window.
 type Window interface {
-	Device() *Dev
+	Device() *Device
 	Release()
 	Uploader
 	Drawer
@@ -57,13 +57,68 @@ type (
 	Paint     = paint.Event
 )
 
-type Dev struct {
+var Dev = &Device{
+	Scroll:    make(chan Scroll, 1),
+	Mouse:     make(chan Mouse, 1),
+	Key:       make(chan Key, 1),
+	Size:      make(chan Size, 1),
+	Paint:     make(chan Paint, 1),
+	Lifecycle: make(chan Lifecycle, 1),
+}
+
+type Device struct {
 	Lifecycle chan Lifecycle
 	Scroll    chan Scroll
 	Mouse     chan Mouse
 	Key       chan Key
 	Size      chan Size
 	Paint     chan Paint
+}
+
+func SendMouse(e Mouse) {
+	select {
+	case Dev.Mouse <- e:
+	default:
+		if e.Button != mouse.ButtonNone {
+			Dev.Mouse <- e
+		}
+	}
+}
+
+func SendKey(e Key){
+	Dev.Key <- e
+}
+
+func SendSize(e Size){
+	select {
+	case Dev.Size <- e:
+	default:
+	}
+}
+
+func SendPaint(e Paint) {
+	select {
+	case Dev.Paint <- e:
+	default:
+	}
+}
+
+func SendScroll(e Scroll) {
+	for {
+		select {
+		case Dev.Scroll <- e:
+			return
+		default:
+			select {
+			case <-Dev.Scroll:
+			default:
+			}
+		}
+	}
+}
+
+func SendLifecycle(e Lifecycle){
+	Dev.Lifecycle <- e
 }
 
 // PublishResult is the result of an Window.Publish call.
