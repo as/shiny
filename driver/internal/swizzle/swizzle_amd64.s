@@ -32,32 +32,28 @@ TEXT ·haveAVX2(SB),NOSPLIT,$0
 	MOVB	BX, ret+0(FP)
 	RET
 
-// func bgra256(p []byte)
-TEXT ·bgra256(SB),NOSPLIT,$0-24
+// func bgra256sd(p, q []byte)
+TEXT ·bgra256sd(SB),NOSPLIT,$0-24
 	MOVQ	p+0(FP), SI
-	MOVQ	len+8(FP), DI
-
-
-	// Sanity check that len is a multiple of 64.
-	MOVQ	DI, AX
-	ANDQ	$63, AX
-	JNZ	done
-
-
-	VMOVDQU ·AVX2_swizzletab<>(SB), Y0
-	ADDQ	SI, DI
-loop:
-	CMPQ	SI, DI
-	JEQ	done
+	MOVQ	len+8(FP), CX
+	MOVQ	q+24(FP), DI
 	
+	VMOVDQU ·AVX2_swizzletab<>(SB), Y0
+	ADDQ SI, CX
+	MOVQ CX, AX	// AX contains the final end offset
+	ANDB	$0, CX
+	
+loop:
+	CMPQ CX, SI
+	JLE loop32
 	VMOVDQU 	(0*32)(SI),Y1 
-	VMOVDQU 	(4*32)(SI),Y5 
 	VMOVDQU 	(1*32)(SI),Y2 
-	VMOVDQU 	(7*32)(SI),Y8 
 	VMOVDQU 	(2*32)(SI),Y3 
-	VMOVDQU 	(6*32)(SI),Y7 
 	VMOVDQU 	(3*32)(SI),Y4 
+	VMOVDQU 	(4*32)(SI),Y5 
 	VMOVDQU 	(5*32)(SI),Y6 
+	VMOVDQU 	(6*32)(SI),Y7 
+	VMOVDQU 	(7*32)(SI),Y8 
 	VPSHUFB Y0, Y1,  Y1
 	VPSHUFB Y0, Y2,  Y2
 	VPSHUFB Y0, Y3,  Y3
@@ -66,6 +62,71 @@ loop:
 	VPSHUFB Y0, Y6,  Y6
 	VPSHUFB Y0, Y7,  Y7
 	VPSHUFB Y0, Y8,  Y8
+//	VPSHUFB Y0, Y1,  Y1
+//	VPSHUFB Y0, Y5,  Y5
+//	VPSHUFB Y0, Y2,  Y2
+//	VPSHUFB Y0, Y8,  Y8
+//	VPSHUFB Y0, Y3,  Y3
+//	VPSHUFB Y0, Y7,  Y7
+//	VPSHUFB Y0, Y4,  Y4
+//	VPSHUFB Y0, Y6,  Y6
+	VMOVDQU	Y1, (0*32)(DI)
+	VMOVDQU	Y2, (1*32)(DI)
+	VMOVDQU	Y3, (2*32)(DI)
+	VMOVDQU	Y4, (3*32)(DI)
+	VMOVDQU	Y5, (4*32)(DI)
+	VMOVDQU	Y6, (5*32)(DI)
+	VMOVDQU	Y7, (6*32)(DI)
+	VMOVDQU	Y8, (7*32)(DI)
+	ADDQ	$256, SI
+	ADDQ	$256, DI
+	JMP	loop
+
+loop32:
+	CMPQ AX, SI
+	JEQ done
+	VMOVDQU 	(0*32)(SI),Y1 
+	VPSHUFB Y0, Y1,  Y1
+	VMOVDQU	Y1, (0*32)(DI)
+	ADDQ	$4, SI
+	ADDQ	$4, DI
+	JMP	loop32
+	
+done:
+	RET
+
+// func bgra256(p []byte)
+TEXT ·bgra256(SB),NOSPLIT,$0-24
+	MOVQ	p+0(FP), SI
+	MOVQ	len+8(FP), DI
+
+	// Sanity check that len is a multiple of 64.
+	MOVQ	DI, AX
+	ANDQ	$63, AX
+	JNZ	done
+
+	VMOVDQU ·AVX2_swizzletab<>(SB), Y0
+	ADDQ	SI, DI
+loop:
+	CMPQ	SI, DI
+	JEQ	done
+	
+	VMOVDQU 	(0*32)(SI),Y1 
+	VMOVDQU 	(1*32)(SI),Y2 
+	VMOVDQU 	(2*32)(SI),Y3 
+	VMOVDQU 	(3*32)(SI),Y4 
+	VMOVDQU 	(4*32)(SI),Y5 
+	VMOVDQU 	(5*32)(SI),Y6 
+	VMOVDQU 	(6*32)(SI),Y7 
+	VMOVDQU 	(7*32)(SI),Y8 
+	VPSHUFB Y0, Y1,  Y1
+	VPSHUFB Y0, Y5,  Y5
+	VPSHUFB Y0, Y2,  Y2
+	VPSHUFB Y0, Y8,  Y8
+	VPSHUFB Y0, Y3,  Y3
+	VPSHUFB Y0, Y7,  Y7
+	VPSHUFB Y0, Y4,  Y4
+	VPSHUFB Y0, Y6,  Y6
 	VMOVDQU	Y1, (0*32)(SI)
 	VMOVDQU	Y2, (1*32)(SI)
 	VMOVDQU	Y3, (2*32)(SI)
@@ -119,7 +180,6 @@ TEXT ·bgra32(SB),NOSPLIT,$0-24
 	MOVQ	DI, AX
 	ANDQ	$31, AX
 	JNZ	done
-
 
 	VMOVDQU ·AVX2_swizzletab<>(SB), Y0
 	ADDQ	SI, DI
