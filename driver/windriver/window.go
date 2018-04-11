@@ -46,14 +46,15 @@ func (w *windowImpl) Release() {
 
 func (w *windowImpl) Upload(dp image.Point, src screen.Buffer, sr image.Rectangle) {
 	b := src.(*bufferImpl).buf
-	swizzle.BGRA(b)
+	b2 := src.(*bufferImpl).buf2
+	swizzle.BGRASD(b2, b)
 	w.execCmd(&cmd{
 		id:     cmdUpload,
 		dp:     dp,
 		buffer: src.(*bufferImpl),
 		sr:     sr,
 	})
-	swizzle.BGRA(b)
+	//swizzle.BGRA(b)
 }
 
 func (w *windowImpl) Fill(dr image.Rectangle, src color.Color, op draw.Op) {

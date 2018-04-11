@@ -6,6 +6,7 @@
 // formats.
 package swizzle // import "github.com/as/shiny/driver/internal/swizzle"
 
+
 var swizzler func(p []byte)
 
 func init() {
@@ -14,6 +15,25 @@ func init() {
 	}
 	if useBGRA32 {
 		swizzler = bgra32
+	}
+}
+
+func BGRASDEXP(p, q []byte) {
+	if useBGRA32 {
+		l := len(p)//&^31//0xff
+		if len(p) > 32{
+			bgra256sd(p[:l], q)
+		}
+	}
+}
+
+func BGRASD(p, q []byte) {
+	if useBGRA32 {
+		l := len(p)//&^31//0xff
+		if len(p) > 32{
+			bgra256sd(p[:l], q)
+//			bgra256sd(p[:l], q)
+		}
 	}
 }
 

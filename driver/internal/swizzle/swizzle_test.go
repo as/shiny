@@ -7,8 +7,53 @@ package swizzle
 import (
 	"bytes"
 	"math/rand"
+	"strings"
 	"testing"
 )
+
+var (
+	rgbaslice = "rgbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargba"
+	bgraslice = "bgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgra"
+)
+
+func TestSwizzle256SD(t *testing.T) {
+	d := make([]byte, 256, 256)
+	s := []byte(rgbaslice)
+	want := bgraslice
+	bgra256sd(s, d)
+	if string(d) != want {
+		t.Fatalf("have: %s\nwant: %s\n", d, want)
+	}
+}
+
+func BenchmarkSwizzle256SD(b *testing.B) {
+	d := make([]byte, 256, 256)
+	s := []byte(rgbaslice)
+	b.SetBytes(int64(len(s)))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		bgra256sd(s, d)
+	}
+}
+
+func BenchmarkSwizzle64KSD(b *testing.B) {
+	d := make([]byte, 256*256, 256*256)
+	s := []byte(strings.Repeat(rgbaslice, 256))
+	b.SetBytes(int64(len(s)))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		bgra256sd(s, d)
+	}
+}
+
+func BenchmarkSwizzle256SDEXP(b *testing.B) {
+	s := []byte(rgbaslice)
+	b.SetBytes(int64(len(s)))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		BGRASDEXP(s, s)
+	}
+}
 
 func TestBGRAShortInput(t *testing.T) {
 	const s = "012.456.89A.CDE.GHI.KLM.O"
@@ -76,6 +121,7 @@ func pureGoBGRA(p []byte) {
 func benchmarkBGRA(b *testing.B, f func([]byte)) {
 	const w, h = 1920, 1080 // 1080p RGBA.
 	buf := make([]byte, 4*w*h)
+	b.SetBytes(int64(len(buf)))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		f(buf)

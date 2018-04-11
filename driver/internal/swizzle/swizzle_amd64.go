@@ -14,6 +14,8 @@ var useBGRA32 = haveAVX2()
 var useBGRA16 = haveSSSE3()
 
 const useBGRA4 = true
+// go test
+func bgra256sd(p, q []byte)
 
 func bgra256(p []byte)
 func bgra64(p []byte)

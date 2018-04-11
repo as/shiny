@@ -24,7 +24,7 @@ func mkbitmap(size image.Point) (syscall.Handle, *byte, error) {
 			Planes:      1,
 			BitCount:    32,
 			Compression: _BI_RGB,
-			SizeImage:   uint32(size.X * size.Y * 4),
+			SizeImage:    uint32(size.X * size.Y * 4),
 		},
 	}
 
