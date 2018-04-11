@@ -85,11 +85,11 @@ func SendMouse(e Mouse) {
 	}
 }
 
-func SendKey(e Key){
+func SendKey(e Key) {
 	Dev.Key <- e
 }
 
-func SendSize(e Size){
+func SendSize(e Size) {
 	select {
 	case Dev.Size <- e:
 	default:
@@ -117,7 +117,7 @@ func SendScroll(e Scroll) {
 	}
 }
 
-func SendLifecycle(e Lifecycle){
+func SendLifecycle(e Lifecycle) {
 	Dev.Lifecycle <- e
 }
 

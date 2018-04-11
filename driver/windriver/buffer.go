@@ -13,10 +13,10 @@ import (
 )
 
 type bufferImpl struct {
-	hbitmap syscall.Handle
-	buf, buf2     []byte
-	rgba    image.RGBA
-	size    image.Point
+	hbitmap   syscall.Handle
+	buf, buf2 []byte
+	rgba      image.RGBA
+	size      image.Point
 	nUpload   uint32
 	released  bool
 }
@@ -32,7 +32,7 @@ func (b *bufferImpl) Release() {
 }
 
 func (b *bufferImpl) cleanUp() {
-	if b.rgba.Pix != nil{
+	if b.rgba.Pix != nil {
 		b.rgba.Pix = nil
 		_DeleteObject(b.hbitmap)
 	}

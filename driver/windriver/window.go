@@ -29,9 +29,7 @@ import (
 
 type windowImpl struct {
 	hwnd syscall.Handle
-
 	//TODO(as): device should be here
-
 	sz             size.Event
 	lifecycleStage lifecycle.Stage
 }
@@ -237,7 +235,7 @@ var msgCmd = win32.AddWindowMsg(handleCmd)
 func (w *windowImpl) execCmd(c *cmd) {
 	win32.SendMessage(w.hwnd, msgCmd, 0, uintptr(unsafe.Pointer(c)))
 	if c.err != nil {
-		panic(fmt.Sprintf("execCmd faild for cmd.id=%d: %v", c.id, c.err)) // TODO handle errors
+		println(fmt.Sprintf("execCmd faild for cmd.id=%d: %v", c.id, c.err)) // TODO handle errors
 	}
 }
 

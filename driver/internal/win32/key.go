@@ -7,8 +7,8 @@
 package win32
 
 import (
-	"github.com/as/shiny/screen"
 	"fmt"
+	"github.com/as/shiny/screen"
 	"syscall"
 	"unicode/utf16"
 
