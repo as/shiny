@@ -17,22 +17,9 @@ func init() {
 	}
 }
 
-func BGRASDEXP(p, q []byte) {
-	if useBGRA32 {
-		l := len(p) //&^31//0xff
-		if len(p) > 32 {
-			bgra256sd(p[:l], q)
-		}
-	}
-}
-
 func BGRASD(p, q []byte) {
 	if useBGRA32 {
-		l := len(p) //&^31//0xff
-		if len(p) > 32 {
-			bgra256sd(p[:l], q)
-			//			bgra256sd(p[:l], q)
-		}
+		bgra256sd(p[:], q)
 	}
 }
 
