@@ -18,8 +18,11 @@ func init() {
 }
 
 func BGRASD(p, q []byte) {
+	if len(p) < 32{
+		return
+	}
 	if useBGRA32 {
-		bgra256sd(p[:], q)
+		bgra256sd(p, q)
 	}
 }
 
