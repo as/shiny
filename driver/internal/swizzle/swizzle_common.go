@@ -18,7 +18,7 @@ func init() {
 }
 
 func BGRASD(p, q []byte) {
-	if len(p) < 32{
+	if len(p) < 32 {
 		return
 	}
 	if useBGRA32 {

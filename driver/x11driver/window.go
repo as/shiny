@@ -17,12 +17,12 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/as/shiny/driver/internal/drawer"
-	"github.com/as/shiny/driver/internal/event"
 	"github.com/as/shiny/driver/internal/lifecycler"
 	"github.com/as/shiny/driver/internal/x11key"
 	"github.com/as/shiny/screen"
 	"golang.org/x/image/math/f64"
 	"golang.org/x/mobile/event/key"
+	"golang.org/x/mobile/event/lifecycle"
 	"golang.org/x/mobile/event/mouse"
 	"golang.org/x/mobile/event/paint"
 	"golang.org/x/mobile/event/size"
@@ -36,7 +36,7 @@ type windowImpl struct {
 	xg xproto.Gcontext
 	xp render.Picture
 
-	event.Deque
+	//	event.Deque
 	xevents chan xgb.Event
 
 	// This next group of variables are mutable, but are only modified in the
@@ -47,6 +47,10 @@ type windowImpl struct {
 
 	mu       sync.Mutex
 	released bool
+}
+
+func (w *windowImpl) Device() *screen.Device {
+	return screen.Dev // TODO(as): multiple windows?
 }
 
 func (w *windowImpl) Release() {
@@ -110,14 +114,14 @@ func (w *windowImpl) handleConfigureNotify(ev xproto.ConfigureNotifyEvent) {
 	// TODO: does the order of these lifecycle and size events matter? Should
 	// they really be a single, atomic event?
 	w.lifecycler.SetVisible((int(ev.X)+int(ev.Width)) > 0 && (int(ev.Y)+int(ev.Height)) > 0)
-	w.lifecycler.SendEvent(w, nil)
+	screen.SendLifecycle(lifecycle.Event{}) // TODO(as)
 
 	newWidth, newHeight := int(ev.Width), int(ev.Height)
 	if w.width == newWidth && w.height == newHeight {
 		return
 	}
 	w.width, w.height = newWidth, newHeight
-	w.Send(size.Event{
+	screen.SendSize(size.Event{
 		WidthPx:     newWidth,
 		HeightPx:    newHeight,
 		WidthPt:     geom.Pt(newWidth),
@@ -127,12 +131,12 @@ func (w *windowImpl) handleConfigureNotify(ev xproto.ConfigureNotifyEvent) {
 }
 
 func (w *windowImpl) handleExpose() {
-	w.Send(paint.Event{})
+	screen.SendPaint(paint.Event{})
 }
 
 func (w *windowImpl) handleKey(detail xproto.Keycode, state uint16, dir key.Direction) {
 	r, c := w.s.keysyms.Lookup(uint8(detail), state)
-	w.Send(key.Event{
+	screen.SendKey(key.Event{
 		Rune:      r,
 		Code:      c,
 		Modifiers: x11key.KeyModifiers(state),
@@ -159,8 +163,16 @@ func (w *windowImpl) handleMouse(x, y int16, b xproto.Button, state uint16, dir 
 			return
 		}
 		dir = mouse.DirStep
+		screen.SendScroll(mouse.Event{
+			X:         float32(x),
+			Y:         float32(y),
+			Button:    btn,
+			Modifiers: x11key.KeyModifiers(state),
+			Direction: dir,
+		})
+		return
 	}
-	w.Send(mouse.Event{
+	screen.SendMouse(mouse.Event{
 		X:         float32(x),
 		Y:         float32(y),
 		Button:    btn,
