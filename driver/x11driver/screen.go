@@ -23,6 +23,7 @@ import (
 	"golang.org/x/mobile/event/key"
 	"golang.org/x/mobile/event/lifecycle"
 	"golang.org/x/mobile/event/mouse"
+	//	"golang.org/x/mobile/event/paint"
 )
 
 // TODO: check that xgb is safe to use concurrently from multiple goroutines.
@@ -60,7 +61,8 @@ type screenImpl struct {
 	mu              sync.Mutex
 	buffers         map[shm.Seg]*bufferImpl
 	uploads         map[uint16]chan struct{}
-	windows         map[xproto.Window]*windowImpl
+	windowX         xproto.Window
+	windowImp       *windowImpl
 	nPendingUploads int
 	completionKeys  []uint16
 }
@@ -71,7 +73,7 @@ func newScreenImpl(xc *xgb.Conn) (*screenImpl, error) {
 		xsi:     xproto.Setup(xc).DefaultScreen(xc),
 		buffers: map[shm.Seg]*bufferImpl{},
 		uploads: map[uint16]chan struct{}{},
-		windows: map[xproto.Window]*windowImpl{},
+		//		windows: map[xproto.Window]*windowImpl{},
 	}
 	if err := s.initAtoms(); err != nil {
 		return nil, err
@@ -120,13 +122,9 @@ func (s *screenImpl) run() {
 			log.Printf("x11driver: xproto.WaitForEvent: %v", err)
 			continue
 		}
-
-		noWindowFound := false
+		w := s.windowImp
 		switch ev := ev.(type) {
 		case xproto.DestroyNotifyEvent:
-			s.mu.Lock()
-			delete(s.windows, ev.Window)
-			s.mu.Unlock()
 
 		case shm.CompletionEvent:
 			s.mu.Lock()
@@ -140,115 +138,41 @@ func (s *screenImpl) run() {
 			}
 			switch xproto.Atom(ev.Data.Data32[0]) {
 			case s.atomWMDeleteWindow:
-				if w := s.findWindow(ev.Window); w != nil {
-					w.lifecycler.SetDead(true)
-					screen.SendLifecycle(lifecycle.Event{To: lifecycle.StageDead})
-					//w.lifecycler.SendEvent(w, nil)
-				} else {
-					noWindowFound = true
-				}
+				screen.SendLifecycle(lifecycle.Event{To: lifecycle.StageDead})
 			case s.atomWMTakeFocus:
 				xproto.SetInputFocus(s.xc, xproto.InputFocusParent, ev.Window, xproto.Timestamp(ev.Data.Data32[1]))
 			}
-
 		case xproto.ConfigureNotifyEvent:
-			if w := s.findWindow(ev.Window); w != nil {
-				w.handleConfigureNotify(ev)
-			} else {
-				noWindowFound = true
-			}
-
+			w.handleConfigureNotify(ev)
 		case xproto.ExposeEvent:
-			if w := s.findWindow(ev.Window); w != nil {
-				// A non-zero Count means that there are more expose events
-				// coming. For example, a non-rectangular exposure (e.g. from a
-				// partially overlapped window) will result in multiple expose
-				// events whose dirty rectangles combine to define the dirty
-				// region. Go's paint events do not provide dirty regions, so
-				// we only pass on the final X11 expose event.
-				if ev.Count == 0 {
-					w.handleExpose()
-				}
-			} else {
-				noWindowFound = true
+			if ev.Count == 0 { // TODO(as)
+				w.handleExpose()
 			}
-
 		case xproto.FocusInEvent:
-			if w := s.findWindow(ev.Event); w != nil {
-				w.lifecycler.SetFocused(true)
-				screen.SendLifecycle(lifecycle.Event{}) // TODO(as)
-			} else {
-				noWindowFound = true
-			}
-
+			screen.SendLifecycle(lifecycle.Event{To: lifecycle.StageFocused}) // TODO(as)
 		case xproto.FocusOutEvent:
-			if w := s.findWindow(ev.Event); w != nil {
-				w.lifecycler.SetFocused(false)
-				screen.SendLifecycle(lifecycle.Event{}) // TODO(as)
-			} else {
-				noWindowFound = true
-			}
-
+			screen.SendLifecycle(lifecycle.Event{To: lifecycle.StageVisible}) // TODO(as)
 		case xproto.KeyPressEvent:
-			if w := s.findWindow(ev.Event); w != nil {
-				w.handleKey(ev.Detail, ev.State, key.DirPress)
-			} else {
-				noWindowFound = true
-			}
-
+			w.handleKey(ev.Detail, ev.State, key.DirPress)
 		case xproto.KeyReleaseEvent:
-			if w := s.findWindow(ev.Event); w != nil {
-				w.handleKey(ev.Detail, ev.State, key.DirRelease)
-			} else {
-				noWindowFound = true
-			}
-
+			w.handleKey(ev.Detail, ev.State, key.DirRelease)
 		case xproto.ButtonPressEvent:
-			if w := s.findWindow(ev.Event); w != nil {
-				w.handleMouse(ev.EventX, ev.EventY, ev.Detail, ev.State, mouse.DirPress)
-			} else {
-				noWindowFound = true
-			}
-
+			w.handleMouse(ev.EventX, ev.EventY, ev.Detail, ev.State, mouse.DirPress)
 		case xproto.ButtonReleaseEvent:
-			if w := s.findWindow(ev.Event); w != nil {
-				w.handleMouse(ev.EventX, ev.EventY, ev.Detail, ev.State, mouse.DirRelease)
-			} else {
-				noWindowFound = true
-			}
-
+			w.handleMouse(ev.EventX, ev.EventY, ev.Detail, ev.State, mouse.DirRelease)
 		case xproto.MotionNotifyEvent:
-			if w := s.findWindow(ev.Event); w != nil {
-				w.handleMouse(ev.EventX, ev.EventY, 0, ev.State, mouse.DirNone)
-			} else {
-				noWindowFound = true
-			}
-		}
-
-		if noWindowFound {
-			log.Printf("x11driver: no window found for event %T", ev)
+			w.handleMouse(ev.EventX, ev.EventY, 0, ev.State, mouse.DirNone)
 		}
 	}
 }
 
-// TODO: is findBuffer and the s.buffers field unused? Delete?
-
-func (s *screenImpl) findBuffer(key shm.Seg) *bufferImpl {
-	s.mu.Lock()
-	b := s.buffers[key]
-	s.mu.Unlock()
-	return b
-}
-
 func (s *screenImpl) findWindow(key xproto.Window) *windowImpl {
-	s.mu.Lock()
-	w := s.windows[key]
-	s.mu.Unlock()
-	return w
+	return s.windowImp
 }
 
 // handleCompletions must only be called while holding s.mu.
 func (s *screenImpl) handleCompletions() {
+	return
 	if s.nPendingUploads != 0 {
 		return
 	}
@@ -402,12 +326,12 @@ func (s *screenImpl) NewWindow(opts *screen.NewWindowOptions) (screen.Window, er
 		xp:      xp,
 		xevents: make(chan xgb.Event),
 	}
+	if s.windowImp != nil {
+		panic("double it")
+	}
+	s.windowImp = w
 
-	s.mu.Lock()
-	s.windows[xw] = w
-	s.mu.Unlock()
-
-	screen.SendLifecycle(lifecycle.Event{}) // TODO(as)
+	screen.SendLifecycle(lifecycle.Event{To: lifecycle.StageAlive}) // TODO(as)
 
 	xproto.CreateWindow(s.xc, s.xsi.RootDepth, xw, s.xsi.Root,
 		0, 0, uint16(width), uint16(height), 0,
