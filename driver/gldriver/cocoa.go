@@ -110,7 +110,7 @@ func drawgl(id uintptr) {
 	}
 
 	// TODO: is this necessary?
-	w.SendPaint(paint.Event{External: true})
+	screen.SendPaint(paint.Event{External: true})
 	<-w.drawDone
 }
 
@@ -172,7 +172,7 @@ func setGeom(id uintptr, ppp float32, widthPx, heightPx int) {
 
 
 
-	w.SendSize(size.Event{
+	screen.SendSize(size.Event{
 		WidthPx:     widthPx,
 		HeightPx:    heightPx,
 		WidthPt:     geom.Pt(float32(widthPx) / ppp),
@@ -183,11 +183,13 @@ func setGeom(id uintptr, ppp float32, widthPx, heightPx int) {
 
 //export windowClosing
 func windowClosing(id uintptr) {
-	sendLifecycle(id, (*lifecycler.State).SetDead, true)
+	screen.SendLifecycle(lifecycle.Event{To: lifecycle.StageDead })
+	//sendLifecycle(id, (*lifecycler.State).SetDead, true)
 }
 
 func sendWindowEvent(id uintptr, e interface{}) {
-	w.Send(e)
+	log.Printf("sendWindowEvent: %v, %#v\n", id, e)
+	//w.Send(e)
 }
 
 var mods = [...]struct {
@@ -309,7 +311,7 @@ var lastFlags uint32
 
 func sendLifecycle(id uintptr, setter func(*lifecycler.State, bool), val bool) {
 	println("id", id)
-	w.SendLifecycle(lifecycle.Event{To: 1})
+	screen.SendLifecycle(lifecycle.Event{To: 1})
 }
 
 func sendLifecycleAll(dead bool) {
