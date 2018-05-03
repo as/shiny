@@ -21,15 +21,10 @@ type windowImpl struct {
 	s *screenImpl
 
 	// id is an OS-specific data structure for the window.
-	//	- Cocoa:   ScreenGLView*
-	//	- X11:     Window
-	//	- Windows: win32.HWND
 	id uintptr
 
 	// ctx is a C data structure for the GL context.
 	//	- Cocoa:   uintptr holding a NSOpenGLContext*.
-	//	- X11:     uintptr holding an EGLSurface.
-	//	- Windows: ctxWin32
 	ctx interface{}
 
 	publish     chan struct{}
@@ -57,36 +52,6 @@ type windowImpl struct {
 }
 
 func (w *windowImpl) Release() {
-	// There are two ways a window can be closed: the Operating System or
-	// Desktop Environment can initiate (e.g. in response to a user clicking a
-	// red button), or the Go app can programatically close the window (by
-	// calling Window.Release).
-	//
-	// When the OS closes a window:
-	//	- Cocoa:   Obj-C's windowWillClose calls Go's windowClosing.
-	//	- X11:     the X11 server sends a WM_DELETE_WINDOW message.
-	//	- Windows: TODO: implement and document this.
-	//
-	// This should send a lifecycle event (To: StageDead) to the Go app's event
-	// loop, which should respond by calling Window.Release (this method).
-	// Window.Release is where system resources are actually cleaned up.
-	//
-	// When Window.Release is called, the closeWindow call below:
-	//	- Cocoa:   calls Obj-C's performClose, which emulates the red button
-	//	           being clicked. (TODO: document how this actually cleans up
-	//	           resources??)
-	//	- X11:     calls C's XDestroyWindow.
-	//	- Windows: TODO: implement and document this.
-	//
-	// On Cocoa, if these two approaches race, experiments suggest that the
-	// race is won by performClose (which is called serially on the main
-	// thread). Even if that isn't true, the windowWillClose handler is
-	// idempotent.
-
-	theScreen.mu.Lock()
-	delete(theScreen.windows, w.id)
-	theScreen.mu.Unlock()
-
 	closeWindow(w.id)
 }
 
@@ -109,6 +74,7 @@ func (w *windowImpl) Upload(dp image.Point, src screen.Buffer, sr image.Rectangl
 				src.t.Release()
 			}
 			src.t = t
+		} else {
 		}
 		src.t.Upload(sr.Min, src, sr)
 		dp = dp.Sub(sr.Min)
@@ -129,6 +95,10 @@ func useOp(glctx gl.Context, op draw.Op) {
 }
 
 func (w *windowImpl) bindBackBuffer() {
+	return
+	if w.backBufferBound {
+		return
+	}
 	w.szMu.Lock()
 	sz := w.sz
 	w.szMu.Unlock()
@@ -142,9 +112,7 @@ func (w *windowImpl) fill(mvp f64.Aff3, src color.Color, op draw.Op) {
 	w.glctxMu.Lock()
 	defer w.glctxMu.Unlock()
 
-	if !w.backBufferBound {
-		w.bindBackBuffer()
-	}
+	//w.bindBackBuffer()
 
 	doFill(w.s, w.glctx, mvp, src, op)
 }
@@ -225,9 +193,9 @@ func (w *windowImpl) Draw(src2dst f64.Aff3, src screen.Texture, sr image.Rectang
 	w.glctxMu.Lock()
 	defer w.glctxMu.Unlock()
 
-	if !w.backBufferBound {
-		w.bindBackBuffer()
-	}
+	//if !w.backBufferBound {
+	w.bindBackBuffer()
+	//}
 
 	useOp(w.glctx, op)
 	w.glctx.UseProgram(w.s.texture.program)
@@ -357,9 +325,9 @@ func (w *windowImpl) Publish() screen.PublishResult {
 	//
 	// This enforces that the final receive (for this paint cycle) on
 	// gl.WorkAvailable happens before the send on publish.
-	w.glctxMu.Lock()
+	//w.glctxMu.Lock()
 	w.glctx.Flush()
-	w.glctxMu.Unlock()
+	//w.glctxMu.Unlock()
 
 	w.publish <- struct{}{}
 	res := <-w.publishDone

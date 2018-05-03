@@ -47,8 +47,6 @@ import (
 	"golang.org/x/mobile/gl"
 )
 
-const useLifecycler = true
-
 var initThreadID C.uint64_t
 
 func newWindow(opts *screen.NewWindowOptions) (uintptr, error) {
@@ -70,10 +68,7 @@ func showWindow(w *windowImpl) {
 
 //export preparedOpenGL
 func preparedOpenGL(id, ctx, vba uintptr) {
-	theScreen.mu.Lock()
-	w := theScreen.windows[id]
-	theScreen.mu.Unlock()
-
+	w := theScreen.window
 	w.ctx = ctx
 	go drawLoop(w, vba)
 }
@@ -85,10 +80,9 @@ func closeWindow(id uintptr) {
 var mainCallback func(screen.Screen)
 
 func main(f func(screen.Screen)) error {
-
-	runtime.LockOSThread()
 	initThreadID = C.threadID()
 	mainCallback = f
+	runtime.LockOSThread()
 	C.startDriver()
 	return nil
 }
@@ -103,14 +97,11 @@ func driverStarted() {
 
 //export drawgl
 func drawgl(id uintptr) {
-	theScreen.mu.Lock()
-	w := theScreen.windows[id]
-	theScreen.mu.Unlock()
-
+	w := theScreen.window
 	if w == nil {
+		panic("dead")
 		return // closing window
 	}
-
 	// TODO: is this necessary?
 	screen.SendPaint(paint.Event{External: true})
 	<-w.drawDone
@@ -155,6 +146,7 @@ func drawLoop(w *windowImpl, vba uintptr) {
 				}
 			}
 			C.flushContext(C.uintptr_t(w.ctx.(uintptr)))
+			C.flushContext(C.uintptr_t(w.ctx.(uintptr)))
 			w.publishDone <- screen.PublishResult{}
 		}
 	}
@@ -162,21 +154,20 @@ func drawLoop(w *windowImpl, vba uintptr) {
 
 //export setGeom
 func setGeom(id uintptr, ppp float32, widthPx, heightPx int) {
-	theScreen.mu.Lock()
-	w := theScreen.windows[id]
-	theScreen.mu.Unlock()
-
+	w := theScreen.window
 	if w == nil {
+		panic("closing window")
 		return // closing window
 	}
 
-	screen.SendSize(size.Event{
+	w.sz = size.Event{
 		WidthPx:     widthPx,
 		HeightPx:    heightPx,
 		WidthPt:     geom.Pt(float32(widthPx) / ppp),
 		HeightPt:    geom.Pt(float32(heightPx) / ppp),
 		PixelsPerPt: ppp,
-	})
+	}
+	screen.SendSize(w.sz)
 }
 
 //export windowClosing
@@ -186,7 +177,7 @@ func windowClosing(id uintptr) {
 }
 
 func sendWindowEvent(id uintptr, e interface{}) {
-	log.Printf("sendWindowEvent: %v, %#v\n", id, e)
+	log.Printf("sendWindowEvent: %#v, %#T\n", id, e)
 	//w.Send(e)
 }
 
@@ -308,11 +299,12 @@ func flagEvent(id uintptr, flags uint32) {
 var lastFlags uint32
 
 func sendLifecycle(id uintptr, setter func(*lifecycler.State, bool), val bool) {
-	println("id", id)
-	screen.SendLifecycle(lifecycle.Event{To: 1})
+
 }
 
 func sendLifecycleAll(dead bool) {
+	screen.SendLifecycle(lifecycle.Event{To: lifecycle.StageFocused})
+	screen.SendLifecycle(lifecycle.Event{To: lifecycle.StageVisible})
 }
 
 //export lifecycleDeadAll
@@ -323,12 +315,12 @@ func lifecycleHideAll() { sendLifecycleAll(false) }
 
 //export lifecycleVisible
 func lifecycleVisible(id uintptr, val bool) {
-	sendLifecycle(id, (*lifecycler.State).SetVisible, val)
+	screen.SendLifecycle(lifecycle.Event{To: lifecycle.StageVisible})
 }
 
 //export lifecycleFocused
 func lifecycleFocused(id uintptr, val bool) {
-	sendLifecycle(id, (*lifecycler.State).SetFocused, val)
+	screen.SendLifecycle(lifecycle.Event{To: lifecycle.StageFocused})
 }
 
 // cocoaRune marks the Carbon/Cocoa private-range unicode rune representing
