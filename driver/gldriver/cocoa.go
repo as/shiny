@@ -32,12 +32,14 @@ import "C"
 import (
 	"errors"
 	"fmt"
+	"log"
 	"runtime"
 	"unsafe"
 
 	"github.com/as/shiny/driver/internal/lifecycler"
 	"github.com/as/shiny/screen"
 	"golang.org/x/mobile/event/key"
+	"golang.org/x/mobile/event/lifecycle"
 	"golang.org/x/mobile/event/mouse"
 	"golang.org/x/mobile/event/paint"
 	"golang.org/x/mobile/event/size"
@@ -114,8 +116,6 @@ func drawgl(id uintptr) {
 	<-w.drawDone
 }
 
-
-
 // drawLoop is the primary drawing loop.
 //
 // After Cocoa has created an NSWindow and called prepareOpenGL,
@@ -170,8 +170,6 @@ func setGeom(id uintptr, ppp float32, widthPx, heightPx int) {
 		return // closing window
 	}
 
-
-
 	screen.SendSize(size.Event{
 		WidthPx:     widthPx,
 		HeightPx:    heightPx,
@@ -183,7 +181,7 @@ func setGeom(id uintptr, ppp float32, widthPx, heightPx int) {
 
 //export windowClosing
 func windowClosing(id uintptr) {
-	screen.SendLifecycle(lifecycle.Event{To: lifecycle.StageDead })
+	screen.SendLifecycle(lifecycle.Event{To: lifecycle.StageDead})
 	//sendLifecycle(id, (*lifecycler.State).SetDead, true)
 }
 
