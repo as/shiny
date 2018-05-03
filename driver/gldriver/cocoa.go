@@ -110,12 +110,11 @@ func drawgl(id uintptr) {
 	}
 
 	// TODO: is this necessary?
-	w.lifecycler.SetVisible(true)
-	w.lifecycler.SendEvent(w, w.glctx)
-
-	w.Send(paint.Event{External: true})
+	w.SendPaint(paint.Event{External: true})
 	<-w.drawDone
 }
+
+
 
 // drawLoop is the primary drawing loop.
 //
@@ -171,14 +170,15 @@ func setGeom(id uintptr, ppp float32, widthPx, heightPx int) {
 		return // closing window
 	}
 
-	sz := size.Event{
+
+
+	w.SendSize(size.Event{
 		WidthPx:     widthPx,
 		HeightPx:    heightPx,
 		WidthPt:     geom.Pt(float32(widthPx) / ppp),
 		HeightPt:    geom.Pt(float32(heightPx) / ppp),
 		PixelsPerPt: ppp,
-	}
-	w.Send(sz)
+	})
 }
 
 //export windowClosing
@@ -240,7 +240,7 @@ func cocoaMouseButton(button int32) mouse.Button {
 	}
 }
 
-func scrollEvent(id uintptr, x, y, dx, dy float32, ty, button int32, flags uint32) {
+func scrollEvent(id uintptr, x, y, dx, dy float32, ty, buttonDeleteMe int32, flags uint32) {
 	button := mouse.ButtonWheelUp
 	if dy < 0 {
 		dy = -dy
@@ -308,27 +308,11 @@ func flagEvent(id uintptr, flags uint32) {
 var lastFlags uint32
 
 func sendLifecycle(id uintptr, setter func(*lifecycler.State, bool), val bool) {
-	setter(&w.lifecycler, val)
-	w.lifecycler.SendEvent(w, w.glctx)
+	println("id", id)
+	w.SendLifecycle(lifecycle.Event{To: 1})
 }
 
 func sendLifecycleAll(dead bool) {
-	windows := []*windowImpl{}
-
-	theScreen.mu.Lock()
-	for _, w := range theScreen.windows {
-		windows = append(windows, w)
-	}
-	theScreen.mu.Unlock()
-
-	for _, w := range windows {
-		w.lifecycler.SetFocused(false)
-		w.lifecycler.SetVisible(false)
-		if dead {
-			w.lifecycler.SetDead(true)
-		}
-		w.lifecycler.SendEvent(w, w.glctx)
-	}
 }
 
 //export lifecycleDeadAll
