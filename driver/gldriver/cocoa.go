@@ -86,8 +86,6 @@ func closeWindow(id uintptr) {
 var mainCallback func(screen.Screen)
 
 func main(f func(screen.Screen)) error {
-
-	runtime.LockOSThread()
 	initThreadID = C.threadID()
 	mainCallback = f
 	C.startDriver()
