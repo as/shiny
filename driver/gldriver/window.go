@@ -11,11 +11,8 @@ import (
 	"sync"
 
 	"github.com/as/shiny/driver/internal/drawer"
-	"github.com/as/shiny/driver/internal/event"
-	"github.com/as/shiny/driver/internal/lifecycler"
 	"github.com/as/shiny/screen"
 	"golang.org/x/image/math/f64"
-	"golang.org/x/mobile/event/lifecycle"
 	"golang.org/x/mobile/event/size"
 	"golang.org/x/mobile/gl"
 )
@@ -35,12 +32,6 @@ type windowImpl struct {
 	//	- Windows: ctxWin32
 	ctx interface{}
 
-	lifecycler lifecycler.State
-	// TODO: Delete the field below (and the useLifecycler constant), and use
-	// the field above for cocoa and win32.
-	lifecycleStage lifecycle.Stage // current stage
-
-	event.Deque
 	publish     chan struct{}
 	publishDone chan screen.PublishResult
 	drawDone    chan struct{}
@@ -99,6 +90,10 @@ func (w *windowImpl) Release() {
 	closeWindow(w.id)
 }
 
+func (w *windowImpl) Device() *screen.Device {
+	return screen.Dev
+
+}
 func (w *windowImpl) Upload(dp image.Point, src screen.Buffer, sr image.Rectangle) {
 	if sr.Empty() {
 		return
