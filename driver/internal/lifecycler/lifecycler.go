@@ -64,6 +64,7 @@ func (s *State) SendEvent(r Sender, drawContext interface{}) {
 	s.mu.Unlock()
 
 	if from != to {
+		return
 		r.Send(lifecycle.Event{
 			From: from,
 			To:   to,

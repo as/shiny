@@ -6,19 +6,17 @@
 
 package windriver
 
-// TODO: implement a back buffer.
-
 import (
 	"fmt"
 	"github.com/as/shiny/driver/internal/drawer"
-	"github.com/as/shiny/driver/internal/event"
+
 	"github.com/as/shiny/driver/internal/swizzle"
 	"github.com/as/shiny/driver/internal/win32"
 	"github.com/as/shiny/screen"
 	"golang.org/x/image/math/f64"
-	"golang.org/x/mobile/event/key"
+
 	"golang.org/x/mobile/event/lifecycle"
-	"golang.org/x/mobile/event/mouse"
+
 	"golang.org/x/mobile/event/paint"
 	"golang.org/x/mobile/event/size"
 	"image"
@@ -31,11 +29,13 @@ import (
 
 type windowImpl struct {
 	hwnd syscall.Handle
-
-	event.Deque
-
+	//TODO(as): device should be here
 	sz             size.Event
 	lifecycleStage lifecycle.Stage
+}
+
+func (w *windowImpl) Device() *screen.Device {
+	return screen.Dev
 }
 
 func (w *windowImpl) Release() {
@@ -43,17 +43,16 @@ func (w *windowImpl) Release() {
 }
 
 func (w *windowImpl) Upload(dp image.Point, src screen.Buffer, sr image.Rectangle) {
-	//	src.(*bufferImpl).preUpload()
-	//	defer src.(*bufferImpl).postUpload()
 	b := src.(*bufferImpl).buf
-	swizzle.BGRA(b)
+	b2 := src.(*bufferImpl).buf2
+	swizzle.BGRASD(b2, b)
 	w.execCmd(&cmd{
 		id:     cmdUpload,
 		dp:     dp,
 		buffer: src.(*bufferImpl),
 		sr:     sr,
 	})
-	swizzle.BGRA(b)
+	//swizzle.BGRA(b)
 }
 
 func (w *windowImpl) Fill(dr image.Rectangle, src color.Color, op draw.Op) {
@@ -173,16 +172,6 @@ func (w *windowImpl) Publish() screen.PublishResult {
 }
 
 func init() {
-	send := func(hwnd syscall.Handle, e interface{}) {
-		theScreen.mu.Lock()
-		w := theScreen.windows[hwnd]
-		theScreen.mu.Unlock()
-
-		w.Send(e)
-	}
-	win32.MouseEvent = func(hwnd syscall.Handle, e mouse.Event) { send(hwnd, e) }
-	win32.PaintEvent = func(hwnd syscall.Handle, e paint.Event) { send(hwnd, e) }
-	win32.KeyEvent = func(hwnd syscall.Handle, e key.Event) { send(hwnd, e) }
 	win32.LifecycleEvent = lifecycleEvent
 	win32.SizeEvent = sizeEvent
 }
@@ -195,10 +184,13 @@ func lifecycleEvent(hwnd syscall.Handle, to lifecycle.Stage) {
 	if w.lifecycleStage == to {
 		return
 	}
-	w.Send(lifecycle.Event{
+	select {
+	default:
+	case w.Device().Lifecycle <- lifecycle.Event{
 		From: w.lifecycleStage,
 		To:   to,
-	})
+	}:
+	}
 	w.lifecycleStage = to
 }
 
@@ -207,11 +199,11 @@ func sizeEvent(hwnd syscall.Handle, e size.Event) {
 	w := theScreen.windows[hwnd]
 	theScreen.mu.Unlock()
 
-	w.Send(e)
+	w.Device().Size <- e
 
 	if e != w.sz {
 		w.sz = e
-		w.Send(paint.Event{})
+		w.Device().Paint <- paint.Event{}
 	}
 }
 
@@ -243,7 +235,7 @@ var msgCmd = win32.AddWindowMsg(handleCmd)
 func (w *windowImpl) execCmd(c *cmd) {
 	win32.SendMessage(w.hwnd, msgCmd, 0, uintptr(unsafe.Pointer(c)))
 	if c.err != nil {
-		panic(fmt.Sprintf("execCmd faild for cmd.id=%d: %v", c.id, c.err)) // TODO handle errors
+		println(fmt.Sprintf("execCmd faild for cmd.id=%d: %v", c.id, c.err)) // TODO handle errors
 	}
 }
 

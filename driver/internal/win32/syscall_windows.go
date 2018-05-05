@@ -109,7 +109,8 @@ const (
 
 const (
 	_IDI_APPLICATION = 32512
-	_IDC_ARROW       = 32512
+	_IDC_ARROW       = 32512 //
+
 )
 
 const (

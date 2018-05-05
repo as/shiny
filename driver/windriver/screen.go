@@ -27,9 +27,6 @@ type screenImpl struct {
 }
 
 func (*screenImpl) NewBuffer(size image.Point) (screen.Buffer, error) {
-	// Buffer length must fit in BITMAPINFO.Header.SizeImage (uint32), as
-	// well as in Go slice length (int). It's easiest to be consistent
-	// between 32-bit and 64-bit, so we just use int32.
 	const (
 		maxInt32  = 0x7fffffff
 		maxBufLen = maxInt32
@@ -45,11 +42,13 @@ func (*screenImpl) NewBuffer(size image.Point) (screen.Buffer, error) {
 	bufLen := 4 * size.X * size.Y
 	array := (*[maxBufLen]byte)(unsafe.Pointer(bitvalues))
 	buf := (*array)[:bufLen:bufLen]
+	buf2 := make([]byte, bufLen, bufLen)
 	return &bufferImpl{
 		hbitmap: hbitmap,
 		buf:     buf,
+		buf2:    buf2,
 		rgba: image.RGBA{
-			Pix:    buf,
+			Pix:    buf2,
 			Stride: 4 * size.X,
 			Rect:   image.Rectangle{Max: size},
 		},

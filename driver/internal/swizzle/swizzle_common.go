@@ -17,6 +17,15 @@ func init() {
 	}
 }
 
+func BGRASD(p, q []byte) {
+	if len(p) < 32 {
+		return
+	}
+	if useBGRA32 {
+		bgra256sd(p, q)
+	}
+}
+
 // BGRA converts a pixel buffer between Go's RGBA and other systems' BGRA byte
 // orders.
 //

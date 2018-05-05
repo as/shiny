@@ -32,23 +32,20 @@ import "C"
 import (
 	"errors"
 	"fmt"
+	"log"
 	"runtime"
 	"unsafe"
 
 	"github.com/as/shiny/driver/internal/lifecycler"
 	"github.com/as/shiny/screen"
 	"golang.org/x/mobile/event/key"
+	"golang.org/x/mobile/event/lifecycle"
 	"golang.org/x/mobile/event/mouse"
 	"golang.org/x/mobile/event/paint"
 	"golang.org/x/mobile/event/size"
 	"golang.org/x/mobile/geom"
 	"golang.org/x/mobile/gl"
 )
-
-const useLifecycler = true
-
-// TODO: change this to true, after manual testing on OS X.
-const handleSizeEventsAtChannelReceive = false
 
 var initThreadID C.uint64_t
 
@@ -71,10 +68,7 @@ func showWindow(w *windowImpl) {
 
 //export preparedOpenGL
 func preparedOpenGL(id, ctx, vba uintptr) {
-	theScreen.mu.Lock()
-	w := theScreen.windows[id]
-	theScreen.mu.Unlock()
-
+	w := theScreen.window
 	w.ctx = ctx
 	go drawLoop(w, vba)
 }
@@ -88,6 +82,7 @@ var mainCallback func(screen.Screen)
 func main(f func(screen.Screen)) error {
 	initThreadID = C.threadID()
 	mainCallback = f
+	runtime.LockOSThread()
 	C.startDriver()
 	return nil
 }
@@ -102,19 +97,13 @@ func driverStarted() {
 
 //export drawgl
 func drawgl(id uintptr) {
-	theScreen.mu.Lock()
-	w := theScreen.windows[id]
-	theScreen.mu.Unlock()
-
+	w := theScreen.window
 	if w == nil {
+		panic("dead")
 		return // closing window
 	}
-
 	// TODO: is this necessary?
-	w.lifecycler.SetVisible(true)
-	w.lifecycler.SendEvent(w, w.glctx)
-
-	w.Send(paint.Event{External: true})
+	screen.SendPaint(paint.Event{External: true})
 	<-w.drawDone
 }
 
@@ -157,6 +146,7 @@ func drawLoop(w *windowImpl, vba uintptr) {
 				}
 			}
 			C.flushContext(C.uintptr_t(w.ctx.(uintptr)))
+			C.flushContext(C.uintptr_t(w.ctx.(uintptr)))
 			w.publishDone <- screen.PublishResult{}
 		}
 	}
@@ -164,45 +154,31 @@ func drawLoop(w *windowImpl, vba uintptr) {
 
 //export setGeom
 func setGeom(id uintptr, ppp float32, widthPx, heightPx int) {
-	theScreen.mu.Lock()
-	w := theScreen.windows[id]
-	theScreen.mu.Unlock()
-
+	w := theScreen.window
 	if w == nil {
+		panic("closing window")
 		return // closing window
 	}
 
-	sz := size.Event{
+	w.sz = size.Event{
 		WidthPx:     widthPx,
 		HeightPx:    heightPx,
 		WidthPt:     geom.Pt(float32(widthPx) / ppp),
 		HeightPt:    geom.Pt(float32(heightPx) / ppp),
 		PixelsPerPt: ppp,
 	}
-
-	if !handleSizeEventsAtChannelReceive {
-		w.szMu.Lock()
-		w.sz = sz
-		w.szMu.Unlock()
-	}
-
-	w.Send(sz)
+	screen.SendSize(w.sz)
 }
 
 //export windowClosing
 func windowClosing(id uintptr) {
-	sendLifecycle(id, (*lifecycler.State).SetDead, true)
+	screen.SendLifecycle(lifecycle.Event{To: lifecycle.StageDead})
+	//sendLifecycle(id, (*lifecycler.State).SetDead, true)
 }
 
 func sendWindowEvent(id uintptr, e interface{}) {
-	theScreen.mu.Lock()
-	w := theScreen.windows[id]
-	theScreen.mu.Unlock()
-
-	if w == nil {
-		return // closing window
-	}
-	w.Send(e)
+	log.Printf("sendWindowEvent: %#v, %#T\n", id, e)
+	//w.Send(e)
 }
 
 var mods = [...]struct {
@@ -255,52 +231,40 @@ func cocoaMouseButton(button int32) mouse.Button {
 	}
 }
 
+func scrollEvent(id uintptr, x, y, dx, dy float32, ty, buttonDeleteMe int32, flags uint32) {
+	button := mouse.ButtonWheelUp
+	if dy < 0 {
+		dy = -dy
+		button = mouse.ButtonWheelDown
+	}
+	screen.SendScroll(mouse.Event{
+		X:         x,
+		Y:         y,
+		Button:    button,
+		Direction: mouse.DirStep,
+		Modifiers: cocoaMods(flags),
+	})
+	return
+}
+
 //export mouseEvent
 func mouseEvent(id uintptr, x, y, dx, dy float32, ty, button int32, flags uint32) {
+	if ty == C.NSScrollWheel {
+		scrollEvent(id, x, y, dx, dy, ty, button, flags)
+		return
+	}
+
 	cmButton := mouse.ButtonNone
 	switch ty {
 	default:
 		cmButton = cocoaMouseButton(button)
-	case C.NSMouseMoved, C.NSLeftMouseDragged, C.NSRightMouseDragged, C.NSOtherMouseDragged:
+	case C.NSMouseMoved,
+		C.NSLeftMouseDragged,
+		C.NSRightMouseDragged,
+		C.NSOtherMouseDragged:
 		// No-op.
-	case C.NSScrollWheel:
-		// Note that the direction of scrolling is inverted by default
-		// on OS X by the "natural scrolling" setting. At the Cocoa
-		// level this inversion is applied to trackpads and mice behind
-		// the scenes, and the value of dy goes in the direction the OS
-		// wants scrolling to go.
-		//
-		// This means the same trackpad/mouse motion on OS X and Linux
-		// can produce wheel events in opposite directions, but the
-		// direction matches what other programs on the OS do.
-		//
-		// If we wanted to expose the phsyical device motion in the
-		// event we could use [NSEvent isDirectionInvertedFromDevice]
-		// to know if "natural scrolling" is enabled.
-		//
-		// TODO: On a trackpad, a scroll can be a drawn-out affair with a
-		// distinct beginning and end. Should the intermediate events be
-		// DirNone?
-		//
-		// TODO: handle horizontal scrolling
-		button := mouse.ButtonWheelUp
-		if dy < 0 {
-			dy = -dy
-			button = mouse.ButtonWheelDown
-		}
-		e := mouse.Event{
-			X:         x,
-			Y:         y,
-			Button:    button,
-			Direction: mouse.DirStep,
-			Modifiers: cocoaMods(flags),
-		}
-		for delta := int(dy); delta != 0; delta-- {
-			sendWindowEvent(id, e)
-		}
-		return
 	}
-	sendWindowEvent(id, mouse.Event{
+	screen.SendMouse(mouse.Event{
 		X:         x,
 		Y:         y,
 		Button:    cmButton,
@@ -311,7 +275,7 @@ func mouseEvent(id uintptr, x, y, dx, dy float32, ty, button int32, flags uint32
 
 //export keyEvent
 func keyEvent(id uintptr, runeVal rune, dir uint8, code uint16, flags uint32) {
-	sendWindowEvent(id, key.Event{
+	screen.SendKey(key.Event{
 		Rune:      cocoaRune(runeVal),
 		Direction: key.Direction(dir),
 		Code:      cocoaKeyCode(code),
@@ -335,34 +299,12 @@ func flagEvent(id uintptr, flags uint32) {
 var lastFlags uint32
 
 func sendLifecycle(id uintptr, setter func(*lifecycler.State, bool), val bool) {
-	theScreen.mu.Lock()
-	w := theScreen.windows[id]
-	theScreen.mu.Unlock()
 
-	if w == nil {
-		return
-	}
-	setter(&w.lifecycler, val)
-	w.lifecycler.SendEvent(w, w.glctx)
 }
 
 func sendLifecycleAll(dead bool) {
-	windows := []*windowImpl{}
-
-	theScreen.mu.Lock()
-	for _, w := range theScreen.windows {
-		windows = append(windows, w)
-	}
-	theScreen.mu.Unlock()
-
-	for _, w := range windows {
-		w.lifecycler.SetFocused(false)
-		w.lifecycler.SetVisible(false)
-		if dead {
-			w.lifecycler.SetDead(true)
-		}
-		w.lifecycler.SendEvent(w, w.glctx)
-	}
+	screen.SendLifecycle(lifecycle.Event{To: lifecycle.StageFocused})
+	screen.SendLifecycle(lifecycle.Event{To: lifecycle.StageVisible})
 }
 
 //export lifecycleDeadAll
@@ -373,12 +315,12 @@ func lifecycleHideAll() { sendLifecycleAll(false) }
 
 //export lifecycleVisible
 func lifecycleVisible(id uintptr, val bool) {
-	sendLifecycle(id, (*lifecycler.State).SetVisible, val)
+	screen.SendLifecycle(lifecycle.Event{To: lifecycle.StageVisible})
 }
 
 //export lifecycleFocused
 func lifecycleFocused(id uintptr, val bool) {
-	sendLifecycle(id, (*lifecycler.State).SetFocused, val)
+	screen.SendLifecycle(lifecycle.Event{To: lifecycle.StageFocused})
 }
 
 // cocoaRune marks the Carbon/Cocoa private-range unicode rune representing

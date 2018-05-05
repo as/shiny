@@ -38,7 +38,6 @@ func (t *textureImpl) Release() {
 
 func (t *textureImpl) Upload(dp image.Point, src screen.Buffer, sr image.Rectangle) {
 	buf := src.(*bufferImpl)
-	buf.preUpload()
 
 	// src2dst is added to convert from the src coordinate space to the dst
 	// coordinate space. It is subtracted to convert the other way.
@@ -94,7 +93,7 @@ func (t *textureImpl) Fill(dr image.Rectangle, src color.Color, op draw.Op) {
 
 	create := t.fb.Value == 0
 	if create {
-		t.fb = glctx.CreateFramebuffer()
+		//t.fb = glctx.CreateFramebuffer()
 	}
 	glctx.BindFramebuffer(gl.FRAMEBUFFER, t.fb)
 	if create {
@@ -108,7 +107,7 @@ func (t *textureImpl) Fill(dr image.Rectangle, src color.Color, op draw.Op) {
 	// gl.Framebuffer{Value: 0}) right away, since we don't necessarily know
 	// the right viewport size yet. It is valid to call textureImpl.Fill before
 	// we've gotten our first size.Event. We bind it lazily instead.
-	t.w.backBufferBound = false
+	//t.w.backBufferBound = false
 }
 
 var quadCoords = f32Bytes(binary.LittleEndian,
