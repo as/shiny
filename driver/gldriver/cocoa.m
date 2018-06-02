@@ -56,6 +56,7 @@ uint64 threadID() {
 
 @implementation ScreenGLView
 - (void)prepareOpenGL {
+	[self callSetGeom];
 	[self setWantsBestResolutionOpenGLSurface:YES];
 	GLint swapInt = 1;
 	NSOpenGLContext *ctx = [self openGLContext];
@@ -99,11 +100,6 @@ uint64 threadID() {
 	int h = r.size.height * [screen backingScaleFactor];
 
 	setGeom((GoUintptr)self, pixelsPerPt, w, h);
-}
-
-- (void)reshape {
-	[super reshape];
-	[self callSetGeom];
 }
 
 - (void)drawRect:(NSRect)theRect {
@@ -188,6 +184,10 @@ uint64 threadID() {
 
 - (void)windowDidChangeScreenProfile:(NSNotification *)notification {
 	[self callSetGeom];
+}
+
+- (void) windowDidResize:(NSNotification *)n {
+  	[self callSetGeom];
 }
 
 // TODO: catch windowDidMiniaturize?
