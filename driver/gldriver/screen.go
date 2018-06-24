@@ -13,9 +13,7 @@ import (
 	"golang.org/x/mobile/gl"
 )
 
-var theScreen = &screenImpl{
-	windows: make(map[uintptr]*windowImpl),
-}
+var theScreen = &screenImpl{}
 
 type screenImpl struct {
 	texture struct {
@@ -35,8 +33,8 @@ type screenImpl struct {
 		quad    gl.Buffer
 	}
 
-	mu      sync.Mutex
-	windows map[uintptr]*windowImpl
+	mu     sync.Mutex
+	window *windowImpl
 }
 
 func (s *screenImpl) NewBuffer(size image.Point) (retBuf screen.Buffer, retErr error) {
@@ -55,15 +53,7 @@ func (s *screenImpl) NewTexture(size image.Point) (screen.Texture, error) {
 	// TODO: this might be correct. Some GL objects can be shared
 	// across contexts. But this needs a review of the spec to make
 	// sure it's correct, and some testing would be nice.
-	var w *windowImpl
-
-	s.mu.Lock()
-	for _, window := range s.windows {
-		w = window
-		break
-	}
-	s.mu.Unlock()
-
+	w := s.window
 	if w == nil {
 		return nil, fmt.Errorf("gldriver: no window available")
 	}
@@ -135,15 +125,10 @@ func (s *screenImpl) NewWindow(opts *screen.NewWindowOptions) (screen.Window, er
 	}
 	initWindow(w)
 
-	s.mu.Lock()
-	s.windows[id] = w
-	s.mu.Unlock()
-
-	if useLifecycler {
-		w.lifecycler.SendEvent(w, nil)
+	if s.window != nil {
+		panic("newwindow")
 	}
-
+	s.window = w
 	showWindow(w)
-
 	return w, nil
 }

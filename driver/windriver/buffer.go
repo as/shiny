@@ -9,33 +9,22 @@ package windriver
 import (
 	"image"
 	"image/draw"
-	"sync"
 	"syscall"
 )
 
 type bufferImpl struct {
-	hbitmap syscall.Handle
-	buf     []byte
-	rgba    image.RGBA
-	size    image.Point
-
-	mu        sync.Mutex
+	hbitmap   syscall.Handle
+	buf, buf2 []byte
+	rgba      image.RGBA
+	size      image.Point
 	nUpload   uint32
 	released  bool
-	cleanedUp bool
 }
 
 func (b *bufferImpl) Size() image.Point       { return b.size }
 func (b *bufferImpl) Bounds() image.Rectangle { return image.Rectangle{Max: b.size} }
 func (b *bufferImpl) RGBA() *image.RGBA       { return &b.rgba }
-
-//func (b *bufferImpl) preUpload() {}
-//func (b *bufferImpl) postUpload() {}
-
 func (b *bufferImpl) Release() {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
 	if !b.released && b.nUpload == 0 {
 		go b.cleanUp()
 	}
@@ -43,19 +32,12 @@ func (b *bufferImpl) Release() {
 }
 
 func (b *bufferImpl) cleanUp() {
-	b.mu.Lock()
-	if b.cleanedUp {
-		b.mu.Unlock()
-		panic("windriver: Buffer clean-up occurred twice")
+	if b.rgba.Pix != nil {
+		b.rgba.Pix = nil
+		_DeleteObject(b.hbitmap)
 	}
-	b.cleanedUp = true
-	b.mu.Unlock()
-
-	b.rgba.Pix = nil
-	_DeleteObject(b.hbitmap)
 }
 
 func (b *bufferImpl) blitToDC(dc syscall.Handle, dp image.Point, sr image.Rectangle) error {
-	err := copyBitmapToDC(dc, sr.Add(dp.Sub(sr.Min)), b.hbitmap, sr, draw.Src)
-	return err
+	return copyBitmapToDC(dc, sr.Add(dp.Sub(sr.Min)), b.hbitmap, sr, draw.Src)
 }

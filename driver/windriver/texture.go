@@ -142,12 +142,6 @@ func (t *textureImpl) update(f func(dc syscall.Handle) error) (retErr error) {
 	if err != nil {
 		return err
 	}
-	//	defer func() {
-	//		_, err2 := _SelectObject(t.dc, prev)
-	//		if retErr == nil {
-	//			retErr = err2
-	//		}
-	//	}()
 
 	return f(t.dc)
 }
