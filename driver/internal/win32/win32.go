@@ -398,6 +398,7 @@ func initScreenWindow() (err error) {
 	if err != nil {
 		return err
 	}
+
 	wc := _WNDCLASS{
 		LpszClassName: swc,
 		LpfnWndProc:   syscall.NewCallback(screenWindowWndProc),
