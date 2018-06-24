@@ -52,7 +52,6 @@ func (w *windowImpl) Upload(dp image.Point, src screen.Buffer, sr image.Rectangl
 		buffer: src.(*bufferImpl),
 		sr:     sr,
 	})
-	//swizzle.BGRA(b)
 }
 
 func (w *windowImpl) Fill(dr image.Rectangle, src color.Color, op draw.Op) {
@@ -177,9 +176,7 @@ func init() {
 }
 
 func lifecycleEvent(hwnd syscall.Handle, to lifecycle.Stage) {
-	theScreen.mu.Lock()
 	w := theScreen.windows[hwnd]
-	theScreen.mu.Unlock()
 
 	if w.lifecycleStage == to {
 		return
@@ -195,12 +192,8 @@ func lifecycleEvent(hwnd syscall.Handle, to lifecycle.Stage) {
 }
 
 func sizeEvent(hwnd syscall.Handle, e size.Event) {
-	theScreen.mu.Lock()
 	w := theScreen.windows[hwnd]
-	theScreen.mu.Unlock()
-
 	w.Device().Size <- e
-
 	if e != w.sz {
 		w.sz = e
 		w.Device().Paint <- paint.Event{}
