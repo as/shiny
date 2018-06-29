@@ -17,18 +17,25 @@ type bufferImpl struct {
 	buf, buf2 []byte
 	rgba      image.RGBA
 	size      image.Point
-	nUpload   uint32
-	released  bool
 }
 
+//func (b *bufferImpl) Resize(size image.Point) *bufferImpl       {
+//	real := b.rgba.Bounds().Size()
+//	curr := b.size
+//	if size.X > real.X || size.Y > real.Y{
+//		// Client wants a larger rectangle than we can provide
+//		return nil
+//	}
+//	if curr.X*curr.Y / 3 > size.X*size.Y{
+//		// Very small rectangle
+//		returnnil
+//	}
+//}
 func (b *bufferImpl) Size() image.Point       { return b.size }
 func (b *bufferImpl) Bounds() image.Rectangle { return image.Rectangle{Max: b.size} }
 func (b *bufferImpl) RGBA() *image.RGBA       { return &b.rgba }
 func (b *bufferImpl) Release() {
-	if !b.released && b.nUpload == 0 {
-		go b.cleanUp()
-	}
-	b.released = true
+	go b.cleanUp()
 }
 
 func (b *bufferImpl) cleanUp() {

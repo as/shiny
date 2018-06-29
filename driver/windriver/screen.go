@@ -9,7 +9,6 @@ package windriver
 import (
 	"fmt"
 	"image"
-	"sync"
 	"syscall"
 	"unsafe"
 
@@ -22,7 +21,6 @@ var theScreen = &screenImpl{
 }
 
 type screenImpl struct {
-	mu      sync.Mutex
 	windows map[syscall.Handle]*windowImpl
 }
 
@@ -69,9 +67,7 @@ func (s *screenImpl) NewWindow(opts *screen.NewWindowOptions) (screen.Window, er
 		return nil, err
 	}
 
-	s.mu.Lock()
 	s.windows[w.hwnd] = w
-	s.mu.Unlock()
 
 	err = win32.ResizeClientRect(w.hwnd, opts)
 	if err != nil {
