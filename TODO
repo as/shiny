@@ -1,0 +1,1 @@
+[ ] Paint event on resize was removed in windows. Remove from linux and mac too.
