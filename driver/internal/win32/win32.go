@@ -370,6 +370,9 @@ func NewWindow(opts *screen.NewWindowOptions) (syscall.Handle, error) {
 }
 
 const windowClass = "shiny_Window"
+const (
+	CS_OWNDC = 32
+)
 
 func initWindowClass() (err error) {
 	wcname, err := syscall.UTF16PtrFromString(windowClass)
@@ -377,6 +380,7 @@ func initWindowClass() (err error) {
 		return err
 	}
 	_, err = _RegisterClass(&_WNDCLASS{
+		Style:         CS_OWNDC,
 		LpszClassName: wcname,
 		LpfnWndProc:   syscall.NewCallback(windowWndProc),
 		HIcon:         hDefaultIcon,

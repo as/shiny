@@ -29,6 +29,7 @@ import (
 )
 
 type windowImpl struct {
+	dc   syscall.Handle
 	hwnd syscall.Handle
 	//TODO(as): device should be here
 	sz             size.Event
@@ -98,17 +99,6 @@ func drawWindow(dc syscall.Handle, src2dst f64.Aff3, src interface{}, sr image.R
 		// general drawing
 		dr = sr.Sub(sr.Min)
 
-		prevmode, err := _SetGraphicsMode(dc, _GM_ADVANCED)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			_, err := _SetGraphicsMode(dc, prevmode)
-			if retErr == nil {
-				retErr = err
-			}
-		}()
-
 		x := _XFORM{
 			eM11: +float32(src2dst[0]),
 			eM12: -float32(src2dst[1]),
@@ -117,7 +107,7 @@ func drawWindow(dc syscall.Handle, src2dst f64.Aff3, src interface{}, sr image.R
 			eDx:  +float32(src2dst[2]),
 			eDy:  +float32(src2dst[5]),
 		}
-		err = _SetWorldTransform(dc, &x)
+		err := _SetWorldTransform(dc, &x)
 		if err != nil {
 			return err
 		}
@@ -177,7 +167,7 @@ func init() {
 }
 
 func lifecycleEvent(hwnd syscall.Handle, to lifecycle.Stage) {
-	w := theScreen.windows[hwnd]
+	w := theScreen.windows
 
 	if w.lifecycleStage == to {
 		return
@@ -193,7 +183,7 @@ func lifecycleEvent(hwnd syscall.Handle, to lifecycle.Stage) {
 }
 
 func sizeEvent(hwnd syscall.Handle, e size.Event) {
-	w := theScreen.windows[hwnd]
+	w := theScreen.windows
 	w.Device().Size <- e
 	if e != w.sz {
 		w.sz = e
@@ -227,7 +217,7 @@ const (
 var msgCmd = win32.AddWindowMsg(handleCmd)
 
 func (w *windowImpl) execCmd(c *cmd) {
-	win32.SendMessage(w.hwnd, msgCmd, 0, uintptr(unsafe.Pointer(c)))
+	win32.SendMessage(w.hwnd, msgCmd, uintptr(w.dc), uintptr(unsafe.Pointer(c)))
 	if c.err != nil {
 		println(fmt.Sprintf("execCmd faild for cmd.id=%d: %v", c.id, c.err)) // TODO handle errors
 	}
@@ -235,13 +225,7 @@ func (w *windowImpl) execCmd(c *cmd) {
 
 func handleCmd(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) {
 	c := (*cmd)(unsafe.Pointer(lParam))
-
-	dc, err := win32.GetDC(hwnd)
-	if err != nil {
-		c.err = err
-		return
-	}
-	defer win32.ReleaseDC(hwnd, dc)
+	dc := syscall.Handle(wParam)
 
 	switch c.id {
 	case cmdDraw:

@@ -9,7 +9,6 @@ package windriver
 import (
 	"fmt"
 	"image"
-	"syscall"
 	"unsafe"
 
 	"github.com/as/shiny/driver/internal/win32"
@@ -17,11 +16,12 @@ import (
 )
 
 var theScreen = &screenImpl{
-	windows: make(map[syscall.Handle]*windowImpl),
+	//	windows: make(map[syscall.Handle]*windowImpl),
 }
 
 type screenImpl struct {
-	windows map[syscall.Handle]*windowImpl
+	windows *windowImpl
+	//	windows map[syscall.Handle]*windowImpl
 }
 
 func (*screenImpl) NewBuffer(size image.Point) (screen.Buffer, error) {
@@ -59,21 +59,26 @@ func (*screenImpl) NewTexture(size image.Point) (screen.Texture, error) {
 }
 
 func (s *screenImpl) NewWindow(opts *screen.NewWindowOptions) (screen.Window, error) {
-	w := &windowImpl{}
-
-	var err error
-	w.hwnd, err = win32.NewWindow(opts)
+	h, err := win32.NewWindow(opts)
+	if err != nil {
+		return nil, err
+	}
+	dc, err := win32.GetDC(h)
+	if err != nil {
+		return nil, err
+	}
+	_, err = _SetGraphicsMode(dc, _GM_ADVANCED)
 	if err != nil {
 		return nil, err
 	}
 
-	s.windows[w.hwnd] = w
-
-	err = win32.ResizeClientRect(w.hwnd, opts)
-	if err != nil {
+	s.windows = &windowImpl{
+		dc:   dc,
+		hwnd: h,
+	}
+	if err = win32.ResizeClientRect(h, opts); err != nil {
 		return nil, err
 	}
-
-	win32.Show(w.hwnd)
-	return w, nil
+	win32.Show(h)
+	return s.windows, nil
 }
