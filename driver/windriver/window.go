@@ -8,6 +8,7 @@ package windriver
 
 import (
 	"fmt"
+
 	"github.com/as/shiny/driver/internal/drawer"
 
 	"github.com/as/shiny/driver/internal/swizzle"
@@ -17,14 +18,14 @@ import (
 
 	"golang.org/x/mobile/event/lifecycle"
 
-	"golang.org/x/mobile/event/paint"
-	"golang.org/x/mobile/event/size"
 	"image"
 	"image/color"
 	"image/draw"
 	"math"
 	"syscall"
 	"unsafe"
+
+	"golang.org/x/mobile/event/size"
 )
 
 type windowImpl struct {
@@ -196,7 +197,7 @@ func sizeEvent(hwnd syscall.Handle, e size.Event) {
 	w.Device().Size <- e
 	if e != w.sz {
 		w.sz = e
-		w.Device().Paint <- paint.Event{}
+		//w.Device().Paint <- paint.Event{}
 	}
 }
 
