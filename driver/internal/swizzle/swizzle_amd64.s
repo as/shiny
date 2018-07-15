@@ -29,11 +29,21 @@ TEXT ·haveAVX2(SB),NOSPLIT,$0
 	CPUID
 	SHRQ	$5, BX
 	ANDQ	$1, BX
-	MOVB	BX, ret+0(FP)
+	MOVB	$0, ret+0(FP)
 	RET
 
+// func zhaveAVX2() bool
+TEXT ·zhaveAVX2(SB),NOSPLIT,$0
+	MOVQ	$7, AX
+	MOVQ	$0, CX
+	CPUID
+	SHRQ	$5, BX
+	ANDQ	$1, BX
+	MOVB	BX, ret+0(FP)
+	RET
+	
 // func bgra256sd(p, q []byte)
-TEXT ·bgra256sd(SB),NOSPLIT,$0-24
+TEXT ·bgra256sd(SB),NOSPLIT,$0-48
 	MOVQ	p+0(FP), SI
 	MOVQ	len+8(FP), CX
 	MOVQ	q+24(FP), DI
@@ -111,116 +121,96 @@ loop4:
 done:
 	RET
 
-// func bgra256(p []byte)
-TEXT ·bgra256(SB),NOSPLIT,$0-24
+// func bgra128sd(p, q []byte)
+TEXT ·bgra128sd(SB),NOSPLIT,$0-48
 	MOVQ	p+0(FP), SI
-	MOVQ	len+8(FP), DI
-
-	// Sanity check that len is a multiple of 64.
-	MOVQ	DI, AX
-	ANDQ	$63, AX
-	JNZ	done
-
-	VMOVDQU ·AVX2_swizzletab<>(SB), Y0
-	ADDQ	SI, DI
-loop:
-	CMPQ	SI, DI
-	JEQ	done
+	MOVQ	len+8(FP), CX
+	MOVQ	q+24(FP), DI
 	
-	VMOVDQU 	(0*32)(SI),Y1 
-	VMOVDQU 	(1*32)(SI),Y2 
-	VMOVDQU 	(2*32)(SI),Y3 
-	VMOVDQU 	(3*32)(SI),Y4 
-	VMOVDQU 	(4*32)(SI),Y5 
-	VMOVDQU 	(5*32)(SI),Y6 
-	VMOVDQU 	(6*32)(SI),Y7 
-	VMOVDQU 	(7*32)(SI),Y8 
-	VPSHUFB Y0, Y1,  Y1
-	VPSHUFB Y0, Y5,  Y5
-	VPSHUFB Y0, Y2,  Y2
-	VPSHUFB Y0, Y8,  Y8
-	VPSHUFB Y0, Y3,  Y3
-	VPSHUFB Y0, Y7,  Y7
-	VPSHUFB Y0, Y4,  Y4
-	VPSHUFB Y0, Y6,  Y6
-	VMOVDQU	Y1, (0*32)(SI)
-	VMOVDQU	Y2, (1*32)(SI)
-	VMOVDQU	Y3, (2*32)(SI)
-	VMOVDQU	Y4, (3*32)(SI)
-	VMOVDQU	Y5, (4*32)(SI)
-	VMOVDQU	Y6, (5*32)(SI)
-	VMOVDQU	Y7, (6*32)(SI)
-	VMOVDQU	Y8, (7*32)(SI)
+	VMOVDQU ·AVX2_swizzletab<>(SB), X0
+	ADDQ SI, CX
+	ADDQ $128, SI
+	CMPQ CX, SI
+	JL prep16
+	SUBQ	$128, SI
+	
+loop128:
+	VMOVDQU 	(0*16)(SI),X1 
+	VMOVDQU 	(1*16)(SI),X2 
+	VMOVDQU 	(2*16)(SI),X3 
+	VMOVDQU 	(3*16)(SI),X4 
+	VMOVDQU 	(4*16)(SI),X5 
+	VMOVDQU 	(5*16)(SI),X6 
+	VMOVDQU 	(6*16)(SI),X7 
+	VMOVDQU 	(7*16)(SI),X8 
+	VPSHUFB X0, X1,  X1
+	VPSHUFB X0, X2,  X2
+	VPSHUFB X0, X3,  X3
+	VPSHUFB X0, X4,  X4
+	VPSHUFB X0, X5,  X5
+	VPSHUFB X0, X6,  X6
+	VPSHUFB X0, X7,  X7
+	VPSHUFB X0, X8,  X8
+	VMOVDQU	X1, (0*16)(DI)
+	VMOVDQU	X2, (1*16)(DI)
+	VMOVDQU	X3, (2*16)(DI)
+	VMOVDQU	X4, (3*16)(DI)
+	VMOVDQU	X5, (4*16)(DI)
+	VMOVDQU	X6, (5*16)(DI)
+	VMOVDQU	X7, (6*16)(DI)
+	VMOVDQU	X8, (7*16)(DI)
+	ADDQ	$128, SI
+	ADDQ	$128, DI
+	CMPQ CX, SI
+	JGT loop128
+	JEQ done
+	
+	SUBQ	$128, DI
+prep16:
+	SUBQ	$128, SI
+	ADDQ $16, SI
+	CMPQ CX, SI
+	JL prep4
+	SUBQ	$16, SI
 
-	ADDQ	$256, SI
-	JMP	loop
+loop16:
+	VMOVDQU 	(0*16)(SI),X1 
+	VPSHUFB X0, X1,  X1
+	VMOVDQU	X1, (0*16)(DI)
+	ADDQ	$16, SI
+	ADDQ	$16, DI
+	CMPQ CX, SI
+	JGT	loop16
+	JEQ done
+	
+	SUBQ	$16, SI
+prep4:
+	SUBQ	$16, DI
+	
+loop4:
+	MOVD	0(SI), AX
+	MOVB	2(SI), BX
+	MOVB	BX, 0(SI)
+	MOVB	AX, 2(SI)
+	ADDQ	$4, SI
+	ADDQ	$4, DI
+	CMPQ CX, SI
+	JGT	loop4
+
 done:
 	RET
-
-// func bgra64(p []byte)
-TEXT ·bgra64(SB),NOSPLIT,$0-24
-	MOVQ	p+0(FP), SI
-	MOVQ	len+8(FP), DI
-
-
-	// Sanity check that len is a multiple of 64.
-	MOVQ	DI, AX
-	ANDQ	$63, AX
-	JNZ	done
-
-
-	VMOVDQU ·AVX2_swizzletab<>(SB), Y0
-	ADDQ	SI, DI
-loop:
-	CMPQ	SI, DI
-	JEQ	done
 	
-	VMOVDQU 	(0*32)(SI),Y1 
-	VMOVDQU 	(1*32)(SI),Y2 
-	VPSHUFB Y0, Y1,  Y1
-	VPSHUFB Y0, Y2,  Y2
-	VMOVDQU	Y1, (0*32)(SI)
-	VMOVDQU	Y2, (1*32)(SI)
-
-	ADDQ	$64, SI
-	JMP	loop
-done:
-	RET
-
-// func bgra32(p []byte)
-TEXT ·bgra32(SB),NOSPLIT,$0-24
+// func bgra16sd(p, q []byte)
+TEXT ·bgra16sd(SB),NOSPLIT,$0-48
 	MOVQ	p+0(FP), SI
-	MOVQ	len+8(FP), DI
-
-	// Sanity check that len is a multiple of 32.
-	MOVQ	DI, AX
-	ANDQ	$31, AX
-	JNZ	done
-
-	VMOVDQU ·AVX2_swizzletab<>(SB), Y0
-	ADDQ	SI, DI
-loop:
-	CMPQ	SI, DI
-	JEQ	done
-	
-	VMOVDQU 	(SI),Y1 
-	VPSHUFB Y0, Y1,  Y1
-	VMOVDQU	Y1, (SI)
-
-	ADDQ	$32, SI
-	JMP	loop
-done:
-	RET
-
-// func bgra16(p []byte)
-TEXT ·bgra16(SB),NOSPLIT,$0-24
-	MOVQ	p+0(FP), SI
-	MOVQ	len+8(FP), DI
+	MOVQ	len+8(FP), CX
+	MOVQ	q+24(FP), DI
 
 	// Sanity check that len is a multiple of 16.
-	MOVQ	DI, AX
-	ANDQ	$15, AX
-	JNZ	done
+//	MOVQ	CX, AX
+//	ANDQ	$15, AX
+//	JNZ	done
+	ADDQ SI, CX
 
 	// Make the shuffle control mask (16-byte register X0) look like this,
 	// where the low order byte comes first:
@@ -235,36 +225,50 @@ TEXT ·bgra16(SB),NOSPLIT,$0-24
 	MOVQ	AX, X1
 	PUNPCKLQDQ	X1, X0
 
-	ADDQ	SI, DI
-loop:
-	CMPQ	SI, DI
-	JEQ	done
-
+loop16:
 	MOVOU	(SI), X1
 	PSHUFB	X0, X1
-	MOVOU	X1, (SI)
+	MOVOU	X1, (DI)
 
 	ADDQ	$16, SI
-	JMP	loop
+	ADDQ	$16, DI
+	CMPQ CX, SI
+	JGT	loop16
+	JEQ done
+
+prep4:
+	SUBQ	$16, DI
+	SUBQ	$16, SI
+loop4:
+	MOVD	0(SI), AX
+	MOVB	2(SI), BX
+	MOVB	BX, 0(SI)
+	MOVB	AX, 2(SI)
+	ADDQ	$4, SI
+	ADDQ	$4, DI
+	CMPQ CX, SI
+	JGT	loop4
 done:
 	RET
 
-// func bgra4(p []byte)
-TEXT ·bgra4(SB),NOSPLIT,$0-24
+// func bgra4sd(p, q []byte)
+TEXT ·bgra4sd(SB),NOSPLIT,$0-48
 	MOVQ	p+0(FP), SI
-	MOVQ	len+8(FP), DI
+	MOVQ	len+8(FP), CX
+	MOVQ	q+24(FP), DI
 
-	ADDQ	SI, DI
+	ADDQ SI, CX
 loop:
-	CMPQ	SI, DI
+	CMPQ	SI, CX
 	JEQ	done
 
 	MOVB	0(SI), AX
 	MOVB	2(SI), BX
-	MOVB	BX, 0(SI)
-	MOVB	AX, 2(SI)
+	MOVB	BX, 0(DI)
+	MOVB	AX, 2(DI)
 
 	ADDQ	$4, SI
+	ADDQ	$4, DI
 	JMP	loop
 done:
 	RET
