@@ -10,6 +10,7 @@ func haveAVX2() bool
 
 var (
 	useAVX2 = haveAVX2()
+	useAVX = haveAVX()
 	useSSSE3 = haveSSSE3()
 	useBGRA4 = true
 	
