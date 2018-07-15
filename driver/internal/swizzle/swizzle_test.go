@@ -31,27 +31,15 @@ func TestMain(m *testing.M) {
 	bgraslice = strings.Repeat(bgraslice, safe)
 
 	if !haveAVX2() {
-		delete(supported, "avx2.128")
 		delete(supported, "avx2.256")
+	}
+	if !haveAVX() {
+		delete(supported, "avx2.128")
 	}
 	if !haveSSSE3() {
 		delete(supported, "ssse.16")
 	}
 	os.Exit(m.Run())
-}
-
-func testSwizzle1(t *testing.T, N int, distinct bool) {
-	t.Helper()
-	s := []byte(rgbaslice[:N])
-	d := s
-	if distinct {
-		d = make([]byte, N, N)
-	}
-	want := bgraslice[:N]
-	bgra256sd(s, d)
-	if string(d) != want {
-		t.Fatalf("have: %s\nwant: %s\n", d, want)
-	}
 }
 
 func TestSwizzleDistinct(t *testing.T) {
@@ -69,6 +57,20 @@ func TestSwizzleOverlap(t *testing.T) {
 	}
 }
 
+func testSwizzle1(t *testing.T, N int, distinct bool) {
+	t.Helper()
+	s := []byte(rgbaslice[:N])
+	d := s
+	if distinct {
+		d = make([]byte, N, N)
+	}
+	want := bgraslice[:N]
+	bgra256sd(s, d)
+	if string(d) != want {
+		t.Fatalf("have: %s\nwant: %s\n", d, want)
+	}
+}
+
 func makeRGBA(len int) []byte {
 	if len%4 != 0 {
 		panic("makeRGBA: len % 4 != 0")
@@ -77,17 +79,14 @@ func makeRGBA(len int) []byte {
 }
 
 func TestBGRAShort(t *testing.T) {
-	tab := []string{
-		0: "rgbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargba",
-		1: "rgbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargba",
-		2: "rgbargbargbargbargbargbargbargba",
-		3: "rgbargbargbargbargbargbargba",
-		4: "rgbargbargbargbargbargba",
-		5: "rgbargbargbargbargba",
-		6: "rgbargbargbargba",
-		7: "rgbargba",
-		8: "rgba",
+	var lens = []int{
+		4, 8, 12, 16, 24, 32, 48, 64, 128, 192, 256, 512,
 	}
+	var tab []string
+	for _, v := range lens{
+		tab = append(tab, rgbaslice[:v])
+	}
+	
 	for name, fn := range supported {
 		t.Run(name, func(t *testing.T) {
 			for i, in := range tab {
@@ -98,7 +97,7 @@ func TestBGRAShort(t *testing.T) {
 				fn(p, q)
 				have := string(q)
 				if want := string(want); have != want {
-					t.Errorf("i=%d: have %q, want %q", i, have, want)
+					t.Errorf("len=%d: have %q, want %q", lens[i], have, want)
 				}
 			}
 		})
