@@ -125,7 +125,8 @@ func (t *textureImpl) Size() image.Point {
 
 func (t *textureImpl) Upload(dp image.Point, src screen.Buffer, sr image.Rectangle) {
 	b := src.(*bufferImpl).buf
-	swizzle.BGRA(b)
+	b2 := src.(*bufferImpl).buf2
+	swizzle.BGRASD(b2, b)
 	src.(*bufferImpl).blitToDC(t.dc, dp, sr)
 }
 
