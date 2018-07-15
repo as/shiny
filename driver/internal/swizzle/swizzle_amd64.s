@@ -1,6 +1,4 @@
-// Copyright 2018 (as). All rights reserved. Added bgra32 for CPUs
-// with AVX2.
-
+// Copyright 2018 (as). Added avx and avx2 support for capable CPUs
 // Copyright 2015 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
@@ -22,6 +20,15 @@ TEXT ·haveSSSE3(SB),NOSPLIT,$0
 	MOVB	CX, ret+0(FP)
 	RET
 
+// func haveAVX() bool
+TEXT ·haveAVX(SB),NOSPLIT,$0
+	MOVQ	$1, AX
+	CPUID
+	SHRQ	$28, CX
+	ANDQ	$1, CX
+	MOVB	CX, ret+0(FP)
+	RET
+	
 // func haveAVX2() bool
 TEXT ·haveAVX2(SB),NOSPLIT,$0
 	MOVQ	$7, AX
@@ -29,19 +36,9 @@ TEXT ·haveAVX2(SB),NOSPLIT,$0
 	CPUID
 	SHRQ	$5, BX
 	ANDQ	$1, BX
-	MOVB	$0, ret+0(FP)
-	RET
-
-// func zhaveAVX2() bool
-TEXT ·zhaveAVX2(SB),NOSPLIT,$0
-	MOVQ	$7, AX
-	MOVQ	$0, CX
-	CPUID
-	SHRQ	$5, BX
-	ANDQ	$1, BX
 	MOVB	BX, ret+0(FP)
 	RET
-	
+
 // func bgra256sd(p, q []byte)
 TEXT ·bgra256sd(SB),NOSPLIT,$0-48
 	MOVQ	p+0(FP), SI
@@ -209,9 +206,9 @@ TEXT ·bgra16sd(SB),NOSPLIT,$0-48
 	MOVQ	q+24(FP), DI
 
 	// Sanity check that len is a multiple of 16.
-//	MOVQ	CX, AX
-//	ANDQ	$15, AX
-//	JNZ	done
+	//	MOVQ	CX, AX
+	//	ANDQ	$15, AX
+	//	JNZ	done
 	ADDQ SI, CX
 
 	// Make the shuffle control mask (16-byte register X0) look like this,
