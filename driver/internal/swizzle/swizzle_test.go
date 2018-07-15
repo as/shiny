@@ -5,21 +5,48 @@ package swizzle
 
 import (
 	"bytes"
+	"fmt"
 	"math/rand"
+	"os"
 	"strings"
 	"testing"
 )
 
 var (
-	rgbaslice = "rgbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargba"
-	bgraslice = "bgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgrabgra"
+	rgbaslice = "abcdefghijklmnopqrstuvwxyz012345ABCDEFGHIJKLMNOPQRSTUVWXYZ6789@="
+	bgraslice = "cbadgfehkjilonmpsrqtwvux0zy14325CBADGFEHKJILONMPSRQTWVUX6ZY7@98="
+
+	supported = map[string]func(p, q []byte){
+		"pure":     pureBGRA,
+		"amd64.4":  bgra4sd,
+		"ssse.16":  bgra16sd,
+		"avx2.128": bgra128sd,
+		"avx2.256": bgra256sd,
+	}
 )
 
-const alpha = "abcdefghijklmnopqrstuvwxyz012345ABCDEFGHIJKLMNOPQRSTUVWXYZ6789@"
+func TestMain(m *testing.M) {
+	const safe = 1024
+	rgbaslice = strings.Repeat(rgbaslice, safe)
+	bgraslice = strings.Repeat(bgraslice, safe)
 
-func testSwizzleNSD(t *testing.T, N int) {
-	d := make([]byte, N, N)
+	if !haveAVX2() {
+		delete(supported, "avx2.128")
+		delete(supported, "avx2.256")
+	}
+	if !haveSSSE3() {
+		delete(supported, "ssse.16")
+	}
+	os.Exit(m.Run())
+}
+
+func testSwizzle1(t *testing.T, N int, distinct bool) {
+	t.Helper()
 	s := []byte(rgbaslice[:N])
+	d := s
+	if distinct {
+		d = make([]byte, N, N)
+	}
 	want := bgraslice[:N]
 	bgra256sd(s, d)
 	if string(d) != want {
@@ -27,90 +54,81 @@ func testSwizzleNSD(t *testing.T, N int) {
 	}
 }
 
-func TestSwizzle32SD(t *testing.T)  { testSwizzleNSD(t, 32) }
-func TestSwizzle64SD(t *testing.T)  { testSwizzleNSD(t, 64) }
-func TestSwizzle96SD(t *testing.T)  { testSwizzleNSD(t, 96) }
-func TestSwizzle128SD(t *testing.T) { testSwizzleNSD(t, 128) }
-func TestSwizzle160SD(t *testing.T) { testSwizzleNSD(t, 160) }
-func TestSwizzle192SD(t *testing.T) { testSwizzleNSD(t, 192) }
-func TestSwizzle224SD(t *testing.T) { testSwizzleNSD(t, 224) }
-
-func TestSwizzle256SD(t *testing.T) {
-	d := make([]byte, 256, 256)
-	s := []byte(rgbaslice)
-	want := bgraslice
-	bgra256sd(s, d)
-	if string(d) != want {
-		t.Fatalf("have: %s\nwant: %s\n", d, want)
+func TestSwizzleDistinct(t *testing.T) {
+	for _, v := range []int{32, 64, 96, 128, 160, 192, 224, 256} {
+		t.Run(fmt.Sprint(v), func(t *testing.T) {
+			testSwizzle1(t, v, true)
+		})
+	}
+}
+func TestSwizzleOverlap(t *testing.T) {
+	for _, v := range []int{32, 64, 96, 128, 160, 192, 224, 256} {
+		t.Run(fmt.Sprint(v), func(t *testing.T) {
+			testSwizzle1(t, v, false)
+		})
 	}
 }
 
-func BenchmarkSwizzle256SD(b *testing.B) {
-	d := make([]byte, 256, 256)
-	s := []byte(rgbaslice)
-	b.SetBytes(int64(len(s)))
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		bgra256sd(s, d)
+func makeRGBA(len int) []byte {
+	if len%4 != 0 {
+		panic("makeRGBA: len % 4 != 0")
+	}
+	return []byte(strings.Repeat("rgba", len/4))
+}
+
+func TestBGRAShort(t *testing.T) {
+	tab := []string{
+		0: "rgbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargba",
+		1: "rgbargbargbargbargbargbargbargbargbargbargbargbargbargbargbargba",
+		2: "rgbargbargbargbargbargbargbargba",
+		3: "rgbargbargbargbargbargbargba",
+		4: "rgbargbargbargbargbargba",
+		5: "rgbargbargbargbargba",
+		6: "rgbargbargbargba",
+		7: "rgbargba",
+		8: "rgba",
+	}
+	for name, fn := range supported {
+		t.Run(name, func(t *testing.T) {
+			for i, in := range tab {
+				want := append([]byte{}, in...)
+				pureBGRA(append([]byte{}, in...), want)
+				p := []byte(in)
+				q := make([]byte, len(p))
+				fn(p, q)
+				have := string(q)
+				if want := string(want); have != want {
+					t.Errorf("i=%d: have %q, want %q", i, have, want)
+				}
+			}
+		})
 	}
 }
 
-func BenchmarkSwizzle64KSD(b *testing.B) {
-	d := make([]byte, 256*256, 256*256)
-	s := []byte(strings.Repeat(rgbaslice, 256))
-	b.SetBytes(int64(len(s)))
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		bgra256sd(s, d)
-	}
-}
-
-func TestBGRAShortInput(t *testing.T) {
-	const s = "012.456.89A.CDE.GHI.KLM.O"
-	testCases := []string{
-		0: "012.456.89A.CDE.GHI.KLM.O",
-		1: "210.456.89A.CDE.GHI.KLM.O",
-		2: "210.654.89A.CDE.GHI.KLM.O",
-		3: "210.654.A98.CDE.GHI.KLM.O",
-		4: "210.654.A98.EDC.GHI.KLM.O",
-		5: "210.654.A98.EDC.IHG.KLM.O",
-		6: "210.654.A98.EDC.IHG.MLK.O",
-	}
-	for i, want := range testCases {
-		b := []byte(s)
-		BGRAsd(b[:4*i],b[:4*i])
-		got := string(b)
-		if got != want {
-			t.Errorf("i=%d: got %q, want %q", i, got, want)
-		}
-		changed := got != s
-		wantChanged := i != 0
-		if changed != wantChanged {
-			t.Errorf("i=%d: changed=%t, want %t", i, changed, wantChanged)
-		}
-	}
-}
-
-func TestBGRARandomInput(t *testing.T) {
+func TestBGRARandom(t *testing.T) {
 	r := rand.New(rand.NewSource(1))
-	fastBuf := make([]byte, 1024)
-	slowBuf := make([]byte, 1024)
-	for i := range fastBuf {
-		fastBuf[i] = uint8(r.Intn(256))
+	var (
+		p0, q0,
+		p1, q1 [1024]byte
+	)
+	for i := range q0 {
+		p0[i] = byte(r.Intn(256))
+		p1[i] = p0[0]
 	}
-	copy(slowBuf, fastBuf)
+	exp := BGRASD
+	ctl := pureBGRA
 
 	for i := 0; i < 100000; i++ {
-		o := r.Intn(len(fastBuf))
-		n := r.Intn(len(fastBuf)-o) &^ 0x03
-		BGRA(fastBuf[o : o+n])
-		pureGoBGRA(slowBuf[o : o+n])
-		if bytes.Equal(fastBuf, slowBuf) {
+		o := r.Intn(len(p1))
+		n := r.Intn(len(p1)-o) &^ 0x03
+		exp(p1[o:o+n], q1[o:o+n])
+		ctl(p0[o:o+n], q0[o:o+n])
+		if bytes.Equal(q0[:], q1[:]) {
 			continue
 		}
-		for j := range fastBuf {
-			x := fastBuf[j]
-			y := slowBuf[j]
+		for j := range q1 {
+			x := q1[j]
+			y := q1[j]
 			if x != y {
 				t.Fatalf("iter %d: swizzling [%d:%d+%d]: bytes differ at offset %d (aka %d+%d): %#02x vs %#02x",
 					i, o, o, n, j, o, j-o, x, y)
@@ -119,29 +137,29 @@ func TestBGRARandomInput(t *testing.T) {
 	}
 }
 
-func pureGoBGRA(p []byte) {
+func pureBGRA(p, q []byte) {
 	if len(p)%4 != 0 {
 		return
 	}
 	for i := 0; i < len(p); i += 4 {
-		p[i+0], p[i+2] = p[i+2], p[i+0]
+		q[i+0], q[i+1], q[i+2], q[i+3] = p[i+2], p[i+1], p[i+0], p[i+3]
 	}
 }
 
-func benchmarkBGRA(b *testing.B, f func([]byte)) {
-	const w, h = 1920, 1080 // 1080p RGBA.
-	buf := make([]byte, 4*w*h)
-	b.SetBytes(int64(len(buf)))
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		f(buf)
+func BenchmarkSwizzle(b *testing.B) {
+	sizes := []string{"64B", "64K", "64M"}
+	for name, fn := range supported {
+		for i, v := range sizes {
+			b.Run(name+"/"+v, func(b *testing.B) {
+				d := makeRGBA(64 * 1 << uint(i))
+				s := make([]byte, len(d))
+				b.SetBytes(int64(len(s)))
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					fn(s, d)
+				}
+
+			})
+		}
 	}
 }
-
-func BenchmarkBGRA(b *testing.B)       { benchmarkBGRA(b, BGRA) }
-func BenchmarkPureGoBGRA(b *testing.B) { benchmarkBGRA(b, pureGoBGRA) }
-func BenchmarkBGRA256(b *testing.B)    { benchmarkBGRA(b, bgra256) }
-func BenchmarkBGRA64(b *testing.B)     { benchmarkBGRA(b, bgra64) }
-func BenchmarkBGRA32(b *testing.B)     { benchmarkBGRA(b, bgra32) }
-func BenchmarkBGRA16(b *testing.B)     { benchmarkBGRA(b, bgra16) }
-func BenchmarkBGRA4(b *testing.B)      { benchmarkBGRA(b, bgra4) }
