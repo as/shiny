@@ -2,17 +2,15 @@
 // Copyright 2015 The Go Authors
 package swizzle
 
-// haveSSSE3 is true on CPUs with SSSE3 (i.e. PSHUFB).
 func haveSSSE3() bool
-
-// haveAVX2 is true on CPUs with AVX2 (i.e. VPSHUFB).
+func haveAVX() bool
 func haveAVX2() bool
 
 var (
-	useAVX2 = haveAVX2()
-	useAVX = haveAVX()
-	useSSSE3 = haveSSSE3()
 	useBGRA4 = true
+	useSSSE3 = haveSSSE3()
+	useAVX = haveAVX()
+	useAVX2 = haveAVX2()
 	
 	swizzler func(p, q []byte)
 )
@@ -21,6 +19,9 @@ func init() {
 	swizzler = bgra4sd
 	if useSSSE3 {
 		swizzler = bgra16sd
+	}
+	if useAVX {
+		swizzler = bgra128sd
 	}
 	if useAVX2{
 		swizzler = bgra256sd
