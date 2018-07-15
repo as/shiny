@@ -1,6 +1,5 @@
-// Copyright 2015 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.	EX
+// Copyright 2018 as
+// Copyright 2015 The Go Authors
 
 package swizzle
 
@@ -79,7 +78,7 @@ func TestBGRAShortInput(t *testing.T) {
 	}
 	for i, want := range testCases {
 		b := []byte(s)
-		BGRA(b[:4*i])
+		BGRAsd(b[:4*i],b[:4*i])
 		got := string(b)
 		if got != want {
 			t.Errorf("i=%d: got %q, want %q", i, got, want)
