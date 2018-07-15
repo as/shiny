@@ -104,15 +104,16 @@ loop32:
 	JGT	loop32
 	JEQ done
 	
-	SUBQ	$32, SI
-prep4:
 	SUBQ	$32, DI
+prep4:
+	SUBQ	$32, SI
 	
 loop4:
-	MOVD	0(SI), AX
-	MOVB	2(SI), BX
-	MOVB	BX, 0(SI)
-	MOVB	AX, 2(SI)
+	MOVD	0(SI), AX	// r g b a
+	BSWAPL AX   // a b g r 
+	RORL	$8, AX 	// b g r a 
+	MOVD	AX, (DI)
+
 	ADDQ	$4, SI
 	ADDQ	$4, DI
 	CMPQ CX, SI
@@ -183,15 +184,16 @@ loop16:
 	JGT	loop16
 	JEQ done
 	
-	SUBQ	$16, SI
-prep4:
 	SUBQ	$16, DI
+prep4:
+	SUBQ	$16, SI
 	
 loop4:
-	MOVD	0(SI), AX
-	MOVB	2(SI), BX
-	MOVB	BX, 0(SI)
-	MOVB	AX, 2(SI)
+	MOVD	0(SI), AX	// r g b a
+	BSWAPL AX   // a b g r 
+	RORL	$8, AX 	// b g r a 
+	MOVD	AX, (DI)
+
 	ADDQ	$4, SI
 	ADDQ	$4, DI
 	CMPQ CX, SI
@@ -240,10 +242,11 @@ prep4:
 	SUBQ	$16, DI
 	SUBQ	$16, SI
 loop4:
-	MOVD	0(SI), AX
-	MOVB	2(SI), BX
-	MOVB	BX, 0(SI)
-	MOVB	AX, 2(SI)
+	MOVD	0(SI), AX	// r g b a
+	BSWAPL AX   // a b g r 
+	RORL	$8, AX 	// b g r a 
+	MOVD	AX, (DI)
+
 	ADDQ	$4, SI
 	ADDQ	$4, DI
 	CMPQ CX, SI
@@ -262,10 +265,10 @@ loop:
 	CMPQ	SI, CX
 	JEQ	done
 
-	MOVB	0(SI), AX
-	MOVB	2(SI), BX
-	MOVB	BX, 0(DI)
-	MOVB	AX, 2(DI)
+	MOVD	0(SI), AX	// r g b a
+	BSWAPL AX   // a b g r 
+	RORL	$8, AX 	// b g r a 
+	MOVD	AX, (DI)
 
 	ADDQ	$4, SI
 	ADDQ	$4, DI
