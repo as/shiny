@@ -15,22 +15,19 @@ var (
 
 func init() {
 	swizzler = bgra4sd
+		println("swizzler = bgra4sd")
 	if useSSSE3 {
 		swizzler = bgra16sd
+		println("swizzler = bgra16sd")
 	}
 	if useAVX {
 		swizzler = bgra128sd
+		println("swizzler = bgra128sd")
 	}
 	if useAVX2{
+		println("swizzler = bgra256sd")
 		swizzler = bgra256sd
 	}
-}
-
-func BGRASD(p, q []byte) {
-	if len(p) < 4 {
-		return
-	}
-	swizzler(p,q)
 }
 
 func bgra256sd(p, q []byte)	// swizzle_amd64.s:/bgra256sd/
