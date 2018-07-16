@@ -126,15 +126,14 @@ func (t *textureImpl) Size() image.Point {
 func (t *textureImpl) Upload(dp image.Point, src screen.Buffer, sr image.Rectangle) {
 	b := src.(*bufferImpl).buf
 	b2 := src.(*bufferImpl).buf2
-	swizzle.BGRASD(b2, b)
+	swizzle.Swizzle(b2, b)
+	println("swizzle.Swizzle(b2, b)")
 	src.(*bufferImpl).blitToDC(t.dc, dp, sr)
 }
 
 // update prepares texture t for update and executes f over texture device
 // context dc in a safe manner.
 func (t *textureImpl) update(f func(dc syscall.Handle) error) (retErr error) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
 
 	// Select t.bitmap into t.dc, so our drawing gets recorded
 	// into t.bitmap and not into 1x1 default bitmap created

@@ -47,7 +47,7 @@ func (w *windowImpl) Release() {
 func (w *windowImpl) Upload(dp image.Point, src screen.Buffer, sr image.Rectangle) {
 	b := src.(*bufferImpl).buf
 	b2 := src.(*bufferImpl).buf2
-	swizzle.BGRASD(b2, b)
+	swizzle.Swizzle(b2, b)
 	w.execCmd(&cmd{
 		id:     cmdUpload,
 		dp:     dp,
