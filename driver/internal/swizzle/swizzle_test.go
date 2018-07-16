@@ -114,7 +114,7 @@ func TestBGRARandom(t *testing.T) {
 		p0[i] = byte(r.Intn(256))
 		p1[i] = p0[0]
 	}
-	exp := BGRASD
+	exp := Swizzle
 	ctl := pureBGRA
 
 	for i := 0; i < 100000; i++ {
