@@ -9,13 +9,13 @@ func haveAVX2() bool
 var (
 	useBGRA4 = true
 	useSSSE3 = haveSSSE3()
-	useAVX = haveAVX()
-	useAVX2 = haveAVX2()
+	useAVX   = haveAVX()
+	useAVX2  = haveAVX2()
 )
 
 func init() {
 	swizzler = bgra4sd
-		println("swizzler = bgra4sd")
+	println("swizzler = bgra4sd")
 	if useSSSE3 {
 		swizzler = bgra16sd
 		println("swizzler = bgra16sd")
@@ -24,13 +24,13 @@ func init() {
 		swizzler = bgra128sd
 		println("swizzler = bgra128sd")
 	}
-	if useAVX2{
+	if useAVX2 {
 		println("swizzler = bgra256sd")
 		swizzler = bgra256sd
 	}
 }
 
-func bgra256sd(p, q []byte)	// swizzle_amd64.s:/bgra256sd/
-func bgra128sd(p,q []byte)	// swizzle_amd64.s:/bgra128sd/
-func bgra16sd(p,q []byte)	// swizzle_amd64.s:/bgra16sd/
-func bgra4sd(p,q []byte)	
+func bgra256sd(p, q []byte) // swizzle_amd64.s:/bgra256sd/
+func bgra128sd(p, q []byte) // swizzle_amd64.s:/bgra128sd/
+func bgra16sd(p, q []byte)  // swizzle_amd64.s:/bgra16sd/
+func bgra4sd(p, q []byte)

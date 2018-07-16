@@ -8,7 +8,7 @@ func Swizzle(p, q []byte) {
 	if len(p) < 4 {
 		return
 	}
-	swizzler(p,q)
+	swizzler(p, q)
 }
 
 func pureBGRA(p, q []byte) {
