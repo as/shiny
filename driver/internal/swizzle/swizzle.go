@@ -4,6 +4,13 @@ var (
 	swizzler = pureBGRA
 )
 
+func Swizzle(p, q []byte) {
+	if len(p) < 4 {
+		return
+	}
+	swizzler(p,q)
+}
+
 func pureBGRA(p, q []byte) {
 	if len(p)%4 != 0 {
 		return

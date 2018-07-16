@@ -32,14 +32,8 @@ func BGRASD(p, q []byte) {
 	}
 	swizzler(p,q)
 }
-var BGRA = BGRASD
 
-// AVX2
 func bgra256sd(p, q []byte)	// swizzle_amd64.s:/bgra256sd/
 func bgra128sd(p,q []byte)	// swizzle_amd64.s:/bgra128sd/
-
-// SSSE
 func bgra16sd(p,q []byte)	// swizzle_amd64.s:/bgra16sd/
-
-// AMD64
 func bgra4sd(p,q []byte)	
