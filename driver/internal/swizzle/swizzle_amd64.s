@@ -40,7 +40,7 @@ TEXT ·haveAVX2(SB),NOSPLIT,$0
 	RET
 
 // func bgra256sd(p, q []byte)
-TEXT ·bgra256sd(SB),NOSPLIT,$0-48
+TEXT ·bgra256sd(SB),NOSPLIT,$0
 	MOVQ	p+0(FP), SI
 	MOVQ	len+8(FP), CX
 	MOVQ	q+24(FP), DI
@@ -100,6 +100,7 @@ loop32:
 	CMPQ CX, SI
 	JGT	loop32
 	JEQ done
+//	RET
 	
 	SUBQ	$32, DI
 prep4:
@@ -120,7 +121,7 @@ done:
 	RET
 
 // func bgra128sd(p, q []byte)
-TEXT ·bgra128sd(SB),NOSPLIT,$0-48
+TEXT ·bgra128sd(SB),NOSPLIT,$0
 	MOVQ	p+0(FP), SI
 	MOVQ	len+8(FP), CX
 	MOVQ	q+24(FP), DI
@@ -200,7 +201,7 @@ done:
 	RET
 	
 // func bgra16sd(p, q []byte)
-TEXT ·bgra16sd(SB),NOSPLIT,$0-48
+TEXT ·bgra16sd(SB),NOSPLIT,$0
 	MOVQ	p+0(FP), SI
 	MOVQ	len+8(FP), CX
 	MOVQ	q+24(FP), DI
@@ -252,7 +253,7 @@ done:
 	RET
 
 // func bgra4sd(p, q []byte)
-TEXT ·bgra4sd(SB),NOSPLIT,$0-48
+TEXT ·bgra4sd(SB),NOSPLIT,$0
 	MOVQ	p+0(FP), SI
 	MOVQ	len+8(FP), CX
 	MOVQ	q+24(FP), DI
