@@ -15,17 +15,13 @@ var (
 
 func init() {
 	swizzler = bgra4sd
-	println("swizzler = bgra4sd")
 	if useSSSE3 {
 		swizzler = bgra16sd
-		println("swizzler = bgra16sd")
 	}
 	if useAVX {
 		swizzler = bgra128sd
-		println("swizzler = bgra128sd")
 	}
 	if useAVX2 {
-		println("swizzler = bgra256sd")
 		swizzler = bgra256sd
 	}
 }

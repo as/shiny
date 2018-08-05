@@ -6,7 +6,7 @@
 package x11key // import "github.com/as/shiny/driver/internal/x11key"
 
 import (
-	"golang.org/x/mobile/event/key"
+	"github.com/as/shiny/event/key"
 )
 
 // These constants come from /usr/include/X11/X.h

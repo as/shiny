@@ -32,12 +32,12 @@ import (
 
 	"github.com/as/shiny/driver/internal/x11key"
 	"github.com/as/shiny/screen"
-	"golang.org/x/mobile/event/key"
-	"golang.org/x/mobile/event/mouse"
-	"golang.org/x/mobile/event/paint"
-	"golang.org/x/mobile/event/size"
-	"golang.org/x/mobile/geom"
-	"golang.org/x/mobile/gl"
+	"github.com/as/shiny/event/key"
+	"github.com/as/shiny/event/mouse"
+	"github.com/as/shiny/event/paint"
+	"github.com/as/shiny/event/size"
+	"github.com/as/shiny/geom"
+	"github.com/as/shiny/gl"
 )
 
 const useLifecycler = true

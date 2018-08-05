@@ -127,7 +127,6 @@ func (t *textureImpl) Upload(dp image.Point, src screen.Buffer, sr image.Rectang
 	b := src.(*bufferImpl).buf
 	b2 := src.(*bufferImpl).buf2
 	swizzle.Swizzle(b2, b)
-	println("swizzle.Swizzle(b2, b)")
 	src.(*bufferImpl).blitToDC(t.dc, dp, sr)
 }
 

@@ -14,7 +14,7 @@ package lifecycler // import "github.com/as/shiny/driver/internal/lifecycler"
 import (
 	"sync"
 
-	"golang.org/x/mobile/event/lifecycle"
+	"github.com/as/shiny/event/lifecycle"
 )
 
 // State is a window's lifecycle state.

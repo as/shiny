@@ -100,7 +100,6 @@ loop32:
 	CMPQ CX, SI
 	JGT	loop32
 	JEQ done
-//	RET
 	
 	SUBQ	$32, DI
 prep4:
