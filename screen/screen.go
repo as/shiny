@@ -10,12 +10,12 @@ import (
 	"image/draw"
 	"unicode/utf8"
 
-	"golang.org/x/image/math/f64"
-	"golang.org/x/mobile/event/key"
-	"golang.org/x/mobile/event/lifecycle"
-	"golang.org/x/mobile/event/mouse"
-	"golang.org/x/mobile/event/paint"
-	"golang.org/x/mobile/event/size"
+	"github.com/as/shiny/event/key"
+	"github.com/as/shiny/event/lifecycle"
+	"github.com/as/shiny/event/mouse"
+	"github.com/as/shiny/event/paint"
+	"github.com/as/shiny/event/size"
+	"github.com/as/shiny/math/f64"
 )
 
 // Screen creates Buffers, Textures and Windows.

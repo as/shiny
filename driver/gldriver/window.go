@@ -12,9 +12,9 @@ import (
 
 	"github.com/as/shiny/driver/internal/drawer"
 	"github.com/as/shiny/screen"
-	"golang.org/x/image/math/f64"
-	"golang.org/x/mobile/event/size"
-	"golang.org/x/mobile/gl"
+	"github.com/as/shiny/math/f64"
+	"github.com/as/shiny/event/size"
+	"github.com/as/shiny/gl"
 )
 
 type windowImpl struct {

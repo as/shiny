@@ -14,9 +14,9 @@ import (
 	"github.com/as/shiny/driver/internal/swizzle"
 	"github.com/as/shiny/driver/internal/win32"
 	"github.com/as/shiny/screen"
-	"golang.org/x/image/math/f64"
+	"github.com/as/shiny/math/f64"
 
-	"golang.org/x/mobile/event/lifecycle"
+	"github.com/as/shiny/event/lifecycle"
 
 	"image"
 	"image/color"
@@ -25,7 +25,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"golang.org/x/mobile/event/size"
+	"github.com/as/shiny/event/size"
 )
 
 type windowImpl struct {

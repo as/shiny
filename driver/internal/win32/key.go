@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"unicode/utf16"
 
-	"golang.org/x/mobile/event/key"
+	"github.com/as/shiny/event/key"
 )
 
 // convVirtualKeyCode converts a Win32 virtual key code number

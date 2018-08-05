@@ -19,11 +19,11 @@ import (
 
 	"github.com/as/shiny/driver/internal/x11key"
 	"github.com/as/shiny/screen"
-	"golang.org/x/image/math/f64"
-	"golang.org/x/mobile/event/key"
-	"golang.org/x/mobile/event/lifecycle"
-	"golang.org/x/mobile/event/mouse"
-	//	"golang.org/x/mobile/event/paint"
+	"github.com/as/shiny/math/f64"
+	"github.com/as/shiny/event/key"
+	"github.com/as/shiny/event/lifecycle"
+	"github.com/as/shiny/event/mouse"
+	//	"github.com/as/shiny/event/paint"
 )
 
 // TODO: check that xgb is safe to use concurrently from multiple goroutines.

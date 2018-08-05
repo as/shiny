@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
@@ -9,7 +8,7 @@ import (
 
 	"github.com/as/shiny/screen"
 	"github.com/as/ui"
-	"golang.org/x/mobile/event/paint"
+	"github.com/as/shiny/event/paint"
 )
 
 func main() {
@@ -17,7 +16,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(dev)
 	win := dev.Window()
 	D := screen.Dev
 	buf, _ := dev.NewBuffer(image.Pt(512, 512))
@@ -29,12 +27,11 @@ func main() {
 		case m := <-D.Mouse:
 			r := image.ZR.Inset(-4).Add(image.Pt(int(m.X), int(m.Y)))
 			draw.Draw(buf.RGBA(), r, red, image.ZP, draw.Src)
-			log.Println("mouse")
 			select {
 			case D.Paint <- paint.Event{}:
-				println("paint sent")
+				log.Println("painted")
 			default:
-				println("no paint allowed")
+				log.Println("miss")
 			}
 		case <-D.Key:
 			log.Println("key")

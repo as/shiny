@@ -7,7 +7,7 @@ package gldriver
 import (
 	"runtime"
 
-	"golang.org/x/mobile/gl"
+	"github.com/as/shiny/gl"
 )
 
 // NewContext creates an OpenGL ES context with a dedicated processing thread.

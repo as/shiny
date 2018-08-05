@@ -15,7 +15,7 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/as/shiny/screen"
-	"golang.org/x/image/math/f64"
+	"github.com/as/shiny/math/f64"
 )
 
 const textureDepth = 32

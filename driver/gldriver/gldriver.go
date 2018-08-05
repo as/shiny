@@ -12,8 +12,8 @@ import (
 
 	"github.com/as/shiny/driver/internal/errscreen"
 	"github.com/as/shiny/screen"
-	"golang.org/x/image/math/f64"
-	"golang.org/x/mobile/gl"
+	"github.com/as/shiny/math/f64"
+	"github.com/as/shiny/gl"
 )
 
 // Main is called by the program's main function to run the graphical

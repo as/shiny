@@ -10,7 +10,7 @@ import (
 	"image/draw"
 
 	"github.com/as/shiny/screen"
-	"golang.org/x/image/math/f64"
+	"github.com/as/shiny/math/f64"
 )
 
 // Copy implements the Copy method of the screen.Drawer interface by calling

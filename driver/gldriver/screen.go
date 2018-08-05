@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/as/shiny/screen"
-	"golang.org/x/mobile/gl"
+	"github.com/as/shiny/gl"
 )
 
 var theScreen = &screenImpl{}
