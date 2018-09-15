@@ -61,7 +61,7 @@ func (*screenImpl) NewTexture(size image.Point) (screen.Texture, error) {
 func (s *screenImpl) NewWindow(opts *screen.NewWindowOptions) (screen.Window, error) {
 	h, err := win32.NewWindow(opts)
 	if err != nil {
-			return nil, err
+		return nil, err
 	}
 	dc, err := win32.GetDC(h)
 	if err != nil {

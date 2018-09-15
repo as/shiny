@@ -13,8 +13,8 @@ import (
 
 	"github.com/as/shiny/driver/internal/swizzle"
 	"github.com/as/shiny/driver/internal/win32"
-	"github.com/as/shiny/screen"
 	"github.com/as/shiny/math/f64"
+	"github.com/as/shiny/screen"
 
 	"github.com/as/shiny/event/lifecycle"
 
