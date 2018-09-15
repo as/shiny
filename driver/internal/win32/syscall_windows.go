@@ -80,8 +80,16 @@ const (
 )
 
 const (
+	_WS_BORDER = 0x00800000
+	_WS_CAPTION = 0x00C00000
+	_WS_CHILD= 0x40000000
+	_WS_CLIPCHILDREN= 0x02000000
+	_WS_CLIPSIBLINGS= 0x04000000
+	_WS_DISABLED= 0x08000000
+	_WS_DLGFRAME= 0x00400000
+	_WS_VISIBLE = 0x10000000
+	
 	_WS_OVERLAPPED       = 0x00000000
-	_WS_CAPTION          = 0x00C00000
 	_WS_SYSMENU          = 0x00080000
 	_WS_THICKFRAME       = 0x00040000
 	_WS_MINIMIZEBOX      = 0x00020000
@@ -176,6 +184,8 @@ func _HIWORD(l uintptr) uint16 {
 // UINT = uint32
 // callbacks = uintptr
 // strings = *uint16
+
+//sys	GetConsoleWindow() (h syscall.Handle) = kernel32.GetConsoleWindow
 
 //sys	GetDC(hwnd syscall.Handle) (dc syscall.Handle, err error) = user32.GetDC
 //sys	ReleaseDC(hwnd syscall.Handle, dc syscall.Handle) (err error) = user32.ReleaseDC
