@@ -135,6 +135,12 @@ type PublishResult struct {
 type NewWindowOptions struct {
 	Width, Height int
 	Title         string
+	
+	// Overlay, if true, attempts to create a new window over top
+	// of the parent process's existing window (similar to running
+	// a graphical application in Plan9 over top an existing Rio
+	// window).
+	Overlay bool
 }
 
 func (o *NewWindowOptions) GetTitle() string {
