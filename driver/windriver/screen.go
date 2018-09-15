@@ -61,7 +61,39 @@ func (*screenImpl) NewTexture(size image.Point) (screen.Texture, error) {
 func (s *screenImpl) NewWindow(opts *screen.NewWindowOptions) (screen.Window, error) {
 	h, err := win32.NewWindow(opts)
 	if err != nil {
+			return nil, err
+	}
+	dc, err := win32.GetDC(h)
+	if err != nil {
 		return nil, err
+	}
+	_, err = _SetGraphicsMode(dc, _GM_ADVANCED)
+	if err != nil {
+		return nil, err
+	}
+
+	s.windows = &windowImpl{
+		dc:   dc,
+		hwnd: h,
+	}
+	if err = win32.ResizeClientRect(h, opts); err != nil {
+		return nil, err
+	}
+	win32.Show(h)
+	return s.windows, nil
+}
+
+// experimental: attempt to overlay on top of existing window
+func (s *screenImpl) newWindow(opts *screen.NewWindowOptions) (screen.Window, error) {
+	var (
+		err error
+	)
+	h := win32.GetConsoleWindow()
+	if !opts.Overlay || h == 0 {
+		// Won't bind to the parent window; create a new one
+		if h, err = win32.NewWindow(opts); err != nil {
+			return nil, err
+		}
 	}
 	dc, err := win32.GetDC(h)
 	if err != nil {
