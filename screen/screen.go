@@ -132,6 +132,7 @@ type PublishResult struct {
 }
 
 // NewWindowOptions are optional arguments to NewWindow.
+// TODO(as): NewWindowOptions could be named better
 type NewWindowOptions struct {
 	Width, Height int
 	Title         string
