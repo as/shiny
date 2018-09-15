@@ -70,12 +70,19 @@ func newWindow(opts *screen.NewWindowOptions) (syscall.Handle, error) {
 	if err != nil {
 		return 0, err
 	}
+	
+	
+	// h := syscall.Handle(0)
+	// if opts.Overlay{
+//		h = GetConsoleWindow()
+//	}
 	hwnd, err := _CreateWindowEx(0,
 		wcname, title,
 		_WS_OVERLAPPEDWINDOW,
 		_CW_USEDEFAULT, _CW_USEDEFAULT,
 		_CW_USEDEFAULT, _CW_USEDEFAULT,
-		0, 0, hThisInstance, 0)
+		0, // was console handle in experiment
+		0, hThisInstance, 0)
 	if err != nil {
 		return 0, err
 	}
@@ -398,7 +405,7 @@ func initScreenWindow() (err error) {
 	if err != nil {
 		return err
 	}
-	emptyString, err := syscall.UTF16PtrFromString("")
+	empty, err := syscall.UTF16PtrFromString("")
 	if err != nil {
 		return err
 	}
@@ -415,16 +422,15 @@ func initScreenWindow() (err error) {
 	if err != nil {
 		return err
 	}
-	screenHWND, err = _CreateWindowEx(0,
-		swc, emptyString,
-		_WS_OVERLAPPEDWINDOW,
-		_CW_USEDEFAULT, _CW_USEDEFAULT,
-		_CW_USEDEFAULT, _CW_USEDEFAULT,
-		_HWND_MESSAGE, 0, hThisInstance, 0)
-	if err != nil {
-		return err
-	}
-	return nil
+	
+	const(
+		//style = _WS_OVERLAPPEDWINDOW | _WS_VISIBLE | _WS_CHILD
+		style = _WS_OVERLAPPEDWINDOW
+		def = int32(_CW_USEDEFAULT)
+	)
+	//screenHWND, err = _CreateWindowEx(0, swc, empty, style, def, def, def, def, GetConsoleWindow(), 0, hThisInstance, 0)
+	screenHWND, err = _CreateWindowEx(0, swc, empty, style, def, def, def, def, _HWND_MESSAGE, 0, hThisInstance, 0)
+	return err
 }
 
 var (
