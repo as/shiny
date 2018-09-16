@@ -79,7 +79,10 @@ func SendMouse(e Mouse) {
 	select {
 	case Dev.Mouse <- e:
 	default:
-		if e.Button != mouse.ButtonNone {
+		// TODO: Retry on failure, but only if it's a press or release
+		// note that this may hang the user, so a better fix should be
+		// in order
+		if e.Button != mouse.ButtonNone && e.Direction != mouse.DirNone{
 			Dev.Mouse <- e
 		}
 	}
