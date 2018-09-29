@@ -28,8 +28,8 @@ var windowMsgs = map[uint32]func(hwnd syscall.Handle, uMsg uint32, wParam, lPara
 	_WM_MOUSEMOVE:   mousetab[_WM_MOUSEMOVE].send,
 	_WM_MOUSEWHEEL:  sendScrollEvent,
 
-	_WM_KEYDOWN: sendKeyEvent,
-	_WM_KEYUP:   sendKeyEvent,
+	_WM_KEYDOWN: keytab.sendDown,
+	_WM_KEYUP:   keytab.sendUp,
 	// TODO case _WM_SYSKEYDOWN, _WM_SYSKEYUP:
 
 	// TODO(as): This will probably break something, let's not
