@@ -105,7 +105,6 @@ const (
 const (
 	_GM_COMPATIBLE = 1
 	_GM_ADVANCED   = 2
-
 	_MWT_IDENTITY = 1
 )
 

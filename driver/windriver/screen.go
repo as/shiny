@@ -15,13 +15,10 @@ import (
 	"github.com/as/shiny/screen"
 )
 
-var theScreen = &screenImpl{
-	//	windows: make(map[syscall.Handle]*windowImpl),
-}
+var theScreen = &screenImpl{}
 
 type screenImpl struct {
 	windows *windowImpl
-	//	windows map[syscall.Handle]*windowImpl
 }
 
 func (*screenImpl) NewBuffer(size image.Point) (screen.Buffer, error) {
