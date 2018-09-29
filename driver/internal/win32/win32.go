@@ -308,12 +308,14 @@ var windowMsgs = map[uint32]func(hwnd syscall.Handle, uMsg uint32, wParam, lPara
 	_WM_RBUTTONDOWN: sendMouseEvent,
 	_WM_RBUTTONUP:   sendMouseEvent,
 	_WM_MOUSEMOVE:   sendMouseEvent,
-
 	_WM_MOUSEWHEEL: sendScrollEvent,
 
 	_WM_KEYDOWN: sendKeyEvent,
 	_WM_KEYUP:   sendKeyEvent,
 	// TODO case _WM_SYSKEYDOWN, _WM_SYSKEYUP:
+	
+	// TODO(as): This will probably break something, let's not
+	//_WM_INPUTLANGCHANGE: changeLanguage,
 }
 
 func AddWindowMsg(fn func(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr)) uint32 {

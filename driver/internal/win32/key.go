@@ -134,6 +134,12 @@ var keytab = [256]key.Code{
 	0xDF: key.CodeUnknown,
 }
 
+func changeLanguage(h syscall.Handle, m uint32, charset, localeID uintptr){
+	
+}
+
+var keyboardLayout = _GetKeyboardLayout(0)
+
 func readRune(vKey uint32, scanCode uint8) rune {
 	var (
 		keystate [256]byte
@@ -142,9 +148,7 @@ func readRune(vKey uint32, scanCode uint8) rune {
 	if err := _GetKeyboardState(&keystate[0]); err != nil {
 		panic(fmt.Sprintf("win32: %v", err))
 	}
-	// TODO: cache GetKeyboardLayout result, update on WM_INPUTLANGCHANGE
-	layout := _GetKeyboardLayout(0)
-	ret := _ToUnicodeEx(vKey, uint32(scanCode), &keystate[0], &buf[0], int32(len(buf)), 0, layout)
+	ret := _ToUnicodeEx(vKey, uint32(scanCode), &keystate[0], &buf[0], int32(len(buf)), 0, keyboardLayout)
 	if ret < 1 {
 		return -1
 	}
