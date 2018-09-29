@@ -150,10 +150,6 @@ func _GET_X_LPARAM(lp uintptr) int32 {
 	return int32(_LOWORD(lp))
 }
 
-func _GET_Y_LPARAM(lp uintptr) int32 {
-	return int32(_HIWORD(lp))
-}
-
 
 //sys	_AlphaBlend(dcdest syscall.Handle, xoriginDest int32, yoriginDest int32, wDest int32, hDest int32, dcsrc syscall.Handle, xoriginSrc int32, yoriginSrc int32, wsrc int32, hsrc int32, ftn uintptr) (err error) = msimg32.AlphaBlend
 //sys	_BitBlt(dcdest syscall.Handle, xdest int32, ydest int32, width int32, height int32, dcsrc syscall.Handle, xsrc int32, ysrc int32, rop uint32) (err error) = gdi32.BitBlt
