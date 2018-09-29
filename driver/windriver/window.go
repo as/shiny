@@ -157,7 +157,6 @@ func (w *windowImpl) Scale(dr image.Rectangle, src screen.Texture, sr image.Rect
 }
 
 func (w *windowImpl) Publish() screen.PublishResult {
-	// TODO
 	return screen.PublishResult{}
 }
 
@@ -187,7 +186,6 @@ func sizeEvent(hwnd syscall.Handle, e size.Event) {
 	w.Device().Size <- e
 	if e != w.sz {
 		w.sz = e
-		//w.Device().Paint <- paint.Event{}
 	}
 }
 

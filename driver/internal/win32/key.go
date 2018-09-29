@@ -135,12 +135,6 @@ var keytab = [256]key.Code{
 	0xDF: key.CodeUnknown,
 }
 
-// convVirtualKeyCode converts a Win32 virtual key code number
-// into the standard keycodes used by the key package.
-func convVirtualKeyCode(vKey uint32) key.Code {
-	return key.CodeUnknown
-}
-
 func readRune(vKey uint32, scanCode uint8) rune {
 	var (
 		keystate [256]byte
