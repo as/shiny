@@ -90,14 +90,6 @@ type _XFORM struct {
 }
 
 
-const (
-	_COLOR_BTNFACE = 15
-)
-
-const (
-	_IDI_APPLICATION = 32512
-	_IDC_ARROW       = 32512
-)
 
 const (
 	_BI_RGB         = 0
