@@ -218,36 +218,27 @@ func sendScrollEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (
 	return
 }
 
-func sendMouseEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
-	e := mouse.Event{
+var mousetab = [...]struct{
+	dir mouse.Direction
+	but mouse.Button
+}{
+	_WM_LBUTTONDOWN: {mouse.DirPress, mouse.ButtonLeft},
+	_WM_MBUTTONDOWN: {mouse.DirPress, mouse.ButtonMiddle},
+	_WM_RBUTTONDOWN: {mouse.DirPress, mouse.ButtonRight},
+	_WM_LBUTTONUP: {mouse.DirRelease, mouse.ButtonLeft},
+	_WM_MBUTTONUP: {mouse.DirRelease, mouse.ButtonMiddle},
+	_WM_RBUTTONUP: {mouse.DirRelease, mouse.ButtonRight},
+}
+
+func sendMouseEvent(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) (lResult uintptr) {
+	s := mousetab[msg]
+	screen.SendMouse(mouse.Event{
+		Direction: s.dir,
+		Button: s.but,
 		X:         float32(_GET_X_LPARAM(lParam)),
 		Y:         float32(_GET_Y_LPARAM(lParam)),
 		Modifiers: keyModifiers(),
-	}
-
-	switch uMsg {
-	case _WM_MOUSEMOVE:
-		e.Direction = mouse.DirNone
-	case _WM_LBUTTONDOWN, _WM_MBUTTONDOWN, _WM_RBUTTONDOWN:
-		e.Direction = mouse.DirPress
-	case _WM_LBUTTONUP, _WM_MBUTTONUP, _WM_RBUTTONUP:
-		e.Direction = mouse.DirRelease
-	default:
-		panic("sendMouseEvent() called on non-mouse message")
-	}
-
-	switch uMsg {
-	case _WM_MOUSEMOVE:
-	case _WM_LBUTTONDOWN, _WM_LBUTTONUP:
-		e.Button = mouse.ButtonLeft
-	case _WM_MBUTTONDOWN, _WM_MBUTTONUP:
-		e.Button = mouse.ButtonMiddle
-	case _WM_RBUTTONDOWN, _WM_RBUTTONUP:
-		e.Button = mouse.ButtonRight
-	}
-
-	screen.SendMouse(e)
-
+	})
 	return 0
 }
 
@@ -393,7 +384,6 @@ func initWindowClass() (err error) {
 		HIcon:         hDefaultIcon,
 		HCursor:       hDefaultCursor,
 		HInstance:     hThisInstance,
-		// TODO(andlabs): change this to something else? NULL? the hollow brush?
 		HbrBackground: syscall.Handle(_COLOR_BTNFACE + 1),
 	})
 	return err
