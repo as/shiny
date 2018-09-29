@@ -218,44 +218,6 @@ func sendScrollEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (
 	return
 }
 
-var mousetab = [...]mouseevent{
-	_WM_LBUTTONDOWN: {mouse.DirPress, mouse.ButtonLeft},
-	_WM_MBUTTONDOWN: {mouse.DirPress, mouse.ButtonMiddle},
-	_WM_RBUTTONDOWN: {mouse.DirPress, mouse.ButtonRight},
-	_WM_LBUTTONUP: {mouse.DirRelease, mouse.ButtonLeft},
-	_WM_MBUTTONUP: {mouse.DirRelease, mouse.ButtonMiddle},
-	_WM_RBUTTONUP: {mouse.DirRelease, mouse.ButtonRight},
-	_WM_MOUSEMOVE: {},
-}
-
-type mouseevent struct{
-	dir mouse.Direction
-	but mouse.Button
-}
-
-func (m mouseevent) send(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) (lResult uintptr) {
-	screen.SendMouse(mouse.Event{
-		Direction: m.dir,
-		Button: m.but,
-		X:         float32(_GET_X_LPARAM(lParam)),
-		Y:         float32(_GET_Y_LPARAM(lParam)),
-		Modifiers: keyModifiers(),
-	})
-	return 0
-}
-
-func sendMouseEvent(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) (lResult uintptr) {
-	s := mousetab[msg]
-	screen.SendMouse(mouse.Event{
-		Direction: s.dir,
-		Button: s.but,
-		X:         float32(_GET_X_LPARAM(lParam)),
-		Y:         float32(_GET_Y_LPARAM(lParam)),
-		Modifiers: keyModifiers(),
-	})
-	return 0
-}
-
 // Precondition: this is called in immediate response to the message that triggered the event (so not after w.Send).
 var (
 	MouseEvent     func(hwnd syscall.Handle, e mouse.Event)
@@ -322,6 +284,7 @@ var windowMsgs = map[uint32]func(hwnd syscall.Handle, uMsg uint32, wParam, lPara
 	_WM_RBUTTONDOWN: mousetab[_WM_RBUTTONDOWN].send,
 	_WM_RBUTTONUP: mousetab[_WM_RBUTTONUP].send,
 	_WM_MOUSEMOVE:    mousetab[_WM_MOUSEMOVE].send,
+	_WM_MOUSEWHEEL: sendScrollEvent,
 
 	_WM_KEYDOWN: sendKeyEvent,
 	_WM_KEYUP:   sendKeyEvent,
