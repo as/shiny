@@ -1,15 +1,13 @@
-// Copyright 2015 The Go Authors. All rights reserved.
+// +build windows
+
+package win32
+
 import (
 	"syscall"
 
 	"github.com/as/shiny/event/mouse"
 	"github.com/as/shiny/screen"
 )
-
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
-// +build windows
 
 type Scroll = mouse.Event
 
