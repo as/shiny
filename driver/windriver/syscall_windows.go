@@ -146,9 +146,6 @@ const (
 	_MWT_IDENTITY = 1
 )
 
-func _GET_X_LPARAM(lp uintptr) int32 {
-	return int32(_LOWORD(lp))
-}
 
 
 //sys	_AlphaBlend(dcdest syscall.Handle, xoriginDest int32, yoriginDest int32, wDest int32, hDest int32, dcsrc syscall.Handle, xoriginSrc int32, yoriginSrc int32, wsrc int32, hsrc int32, ftn uintptr) (err error) = msimg32.AlphaBlend
