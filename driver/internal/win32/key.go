@@ -152,27 +152,24 @@ func readRune(vKey uint32, scanCode uint8) rune {
 	return utf16.Decode(buf[:ret])[0]
 }
 
-func sendKeyEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
-	e := key.Event{
-		Rune:      readRune(uint32(wParam), uint8(lParam>>16)),
-		Code:      keytab(byte(wParam)),
-		Modifiers: keyModifiers(),
-	}
-	switch uMsg {
-	case _WM_KEYDOWN:
-		const prevMask = 1 << 30
-		if repeat := lParam&prevMask == prevMask; repeat {
-			e.Direction = key.DirNone
-		} else {
-			e.Direction = key.DirPress
+func sendKeyEvent(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) (lResult uintptr) {const prevMask = 1 << 30
+	
+	dir := key.DirNone
+	if msg == _WM_KEYDOWN{
+		if lParam & prevMask != prevMask{
+			dir = key.DirPress
 		}
-	case _WM_KEYUP:
-		e.Direction = key.DirRelease
-	default:
-		panic(fmt.Sprintf("win32: unexpected key message: %d", uMsg))
+	} else if msg == _WM_KEYUP{
+		dir = key.DirRelease
+	} else {
+		panic(fmt.Sprintf("win32: unexpected key message: %d", msg))
 	}
-	screen.Dev.Key <- e
-
-	//	KeyEvent(hwnd, e)
+	
+	screen.Dev.Key <- key.Event{
+		Rune:      readRune(uint32(wParam), uint8(lParam>>16)),
+		Code:      keytab[byte(wParam)],
+		Modifiers: keyModifiers(),
+		Direction: dir,
+	}
 	return 0
 }
