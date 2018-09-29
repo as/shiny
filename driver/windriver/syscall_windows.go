@@ -89,23 +89,6 @@ type _XFORM struct {
 	eDy  float32
 }
 
-const (
-	_WM_PAINT            = 15
-	_WM_WINDOWPOSCHANGED = 71
-	_WM_KEYDOWN          = 256
-	_WM_KEYUP            = 257
-	_WM_SYSKEYDOWN       = 260
-	_WM_SYSKEYUP         = 261
-	_WM_MOUSEMOVE        = 512
-	_WM_LBUTTONDOWN      = 513
-	_WM_LBUTTONUP        = 514
-	_WM_RBUTTONDOWN      = 516
-	_WM_RBUTTONUP        = 517
-	_WM_MBUTTONDOWN      = 519
-	_WM_MBUTTONUP        = 520
-	_WM_USER             = 0x0400
-)
-
 
 const (
 	_COLOR_BTNFACE = 15
