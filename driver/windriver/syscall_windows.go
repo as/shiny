@@ -100,9 +100,6 @@ const (
 	_AC_SRC_ALPHA = 0x01
 
 	_SRCCOPY = 0x00cc0020
-
-	_SHADEBLENDCAPS = 120
-	_SB_NONE        = 0
 )
 
 const (
