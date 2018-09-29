@@ -243,27 +243,6 @@ func sendMouseEvent(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) (lR
 }
 
 // Precondition: this is called in immediate response to the message that triggered the event (so not after w.Send).
-func keyModifiers() (m key.Modifiers) {
-	down := func(x int32) bool {
-		// GetKeyState gets the key state at the time of the message, so this is what we want.
-		return _GetKeyState(x)&0x80 != 0
-	}
-
-	if down(_VK_CONTROL) {
-		m |= key.ModControl
-	}
-	if down(_VK_MENU) {
-		m |= key.ModAlt
-	}
-	if down(_VK_SHIFT) {
-		m |= key.ModShift
-	}
-	if down(_VK_LWIN) || down(_VK_RWIN) {
-		m |= key.ModMeta
-	}
-	return m
-}
-
 var (
 	MouseEvent     func(hwnd syscall.Handle, e mouse.Event)
 	PaintEvent     func(hwnd syscall.Handle, e paint.Event)

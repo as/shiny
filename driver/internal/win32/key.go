@@ -151,6 +151,27 @@ func readRune(vKey uint32, scanCode uint8) rune {
 	return utf16.Decode(buf[:ret])[0]
 }
 
+func keyModifiers() (m key.Modifiers) {
+	down := func(x int32) bool {
+		// GetKeyState gets the key state at the time of the message, so this is what we want.
+		return _GetKeyState(x)&0x80 != 0
+	}
+
+	if down(_VK_CONTROL) {
+		m |= key.ModControl
+	}
+	if down(_VK_MENU) {
+		m |= key.ModAlt
+	}
+	if down(_VK_SHIFT) {
+		m |= key.ModShift
+	}
+	if down(_VK_LWIN) || down(_VK_RWIN) {
+		m |= key.ModMeta
+	}
+	return m
+}
+
 func sendKeyEvent(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) (lResult uintptr) {
 	const prevMask = 1 << 30
 
