@@ -14,10 +14,9 @@ func _RGB(r, g, b byte) _COLORREF {
 	return _COLORREF(r) | _COLORREF(g)<<8 | _COLORREF(b)<<16
 }
 
-type _POINT struct {
-	X int32
-	Y int32
-}
+
+
+
 
 type _RECT struct {
 	Left   int32
@@ -157,10 +156,6 @@ func _GET_Y_LPARAM(lp uintptr) int32 {
 
 func _LOWORD(l uintptr) uint16 {
 	return uint16(uint32(l))
-}
-
-func _HIWORD(l uintptr) uint16 {
-	return uint16(uint32(l >> 16))
 }
 
 //sys	_AlphaBlend(dcdest syscall.Handle, xoriginDest int32, yoriginDest int32, wDest int32, hDest int32, dcsrc syscall.Handle, xoriginSrc int32, yoriginSrc int32, wsrc int32, hsrc int32, ftn uintptr) (err error) = msimg32.AlphaBlend
