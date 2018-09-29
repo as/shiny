@@ -13,6 +13,10 @@ import (
 	"github.com/as/shiny/screen"
 )
 
+type Mouse = mouse.Event
+
+var MouseEvent  func(hwnd syscall.Handle, e mouse.Event)
+
 type mouseevent struct {
 	dir mouse.Direction
 	but mouse.Button

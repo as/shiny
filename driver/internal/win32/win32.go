@@ -11,18 +11,14 @@ package win32 // import "github.com/as/shiny/driver/internal/win32"
 
 import (
 	"fmt"
-	"runtime"
 	"sync"
 	"syscall"
 	"unsafe"
 
-	"github.com/as/shiny/screen"
-	"github.com/as/shiny/event/key"
 	"github.com/as/shiny/event/lifecycle"
-	"github.com/as/shiny/event/mouse"
-	"github.com/as/shiny/event/paint"
 	"github.com/as/shiny/event/size"
 	"github.com/as/shiny/geom"
+	"github.com/as/shiny/screen"
 )
 
 // screenHWND is the handle to the "Screen window".
@@ -70,11 +66,11 @@ func newWindow(opts *screen.NewWindowOptions) (syscall.Handle, error) {
 	if err != nil {
 		return 0, err
 	}
-	
+
 	// h := syscall.Handle(0)
 	// if opts.Overlay{
-//		h = GetConsoleWindow()
-//	}
+	//		h = GetConsoleWindow()
+	//	}
 	hwnd, err := _CreateWindowEx(0,
 		wcname, title,
 		_WS_OVERLAPPEDWINDOW,
@@ -174,10 +170,7 @@ func sendSize(hwnd syscall.Handle) {
 }
 
 type Lifecycle = lifecycle.Event
-type Mouse = mouse.Event
-type Key = key.Event
 type Size = size.Event
-type Paint = paint.Event
 
 func sendClose(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
 	LifecycleEvent(hwnd, lifecycle.StageDead)
@@ -186,17 +179,9 @@ func sendClose(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResul
 
 // Precondition: this is called in immediate response to the message that triggered the event (so not after w.Send).
 var (
-	MouseEvent     func(hwnd syscall.Handle, e mouse.Event)
-	PaintEvent     func(hwnd syscall.Handle, e paint.Event)
 	SizeEvent      func(hwnd syscall.Handle, e size.Event)
-	KeyEvent       func(hwnd syscall.Handle, e key.Event)
 	LifecycleEvent func(hwnd syscall.Handle, e lifecycle.Stage)
 )
-
-func sendPaint(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
-	screen.SendPaint(Paint{})
-	return _DefWindowProc(hwnd, uMsg, wParam, lParam)
-}
 
 var screenMsgs = map[uint32]func(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr){}
 
@@ -244,18 +229,18 @@ var windowMsgs = map[uint32]func(hwnd syscall.Handle, uMsg uint32, wParam, lPara
 	_WM_CLOSE:            sendClose,
 
 	_WM_LBUTTONDOWN: mousetab[_WM_LBUTTONDOWN].send,
-	_WM_LBUTTONUP: mousetab[_WM_LBUTTONUP].send,
+	_WM_LBUTTONUP:   mousetab[_WM_LBUTTONUP].send,
 	_WM_MBUTTONDOWN: mousetab[_WM_MBUTTONDOWN].send,
-	_WM_MBUTTONUP: mousetab[_WM_MBUTTONUP].send,
+	_WM_MBUTTONUP:   mousetab[_WM_MBUTTONUP].send,
 	_WM_RBUTTONDOWN: mousetab[_WM_RBUTTONDOWN].send,
-	_WM_RBUTTONUP: mousetab[_WM_RBUTTONUP].send,
-	_WM_MOUSEMOVE:    mousetab[_WM_MOUSEMOVE].send,
-	_WM_MOUSEWHEEL: sendScrollEvent,
+	_WM_RBUTTONUP:   mousetab[_WM_RBUTTONUP].send,
+	_WM_MOUSEMOVE:   mousetab[_WM_MOUSEMOVE].send,
+	_WM_MOUSEWHEEL:  sendScrollEvent,
 
 	_WM_KEYDOWN: sendKeyEvent,
 	_WM_KEYUP:   sendKeyEvent,
 	// TODO case _WM_SYSKEYDOWN, _WM_SYSKEYUP:
-	
+
 	// TODO(as): This will probably break something, let's not
 	//_WM_INPUTLANGCHANGE: changeLanguage,
 }
@@ -335,11 +320,11 @@ func initScreenWindow() (err error) {
 	if err != nil {
 		return err
 	}
-	
-	const(
+
+	const (
 		//style = _WS_OVERLAPPEDWINDOW | _WS_VISIBLE | _WS_CHILD
 		style = _WS_OVERLAPPEDWINDOW
-		def = int32(_CW_USEDEFAULT)
+		def   = int32(_CW_USEDEFAULT)
 	)
 	//screenHWND, err = _CreateWindowEx(0, swc, empty, style, def, def, def, def, GetConsoleWindow(), 0, hThisInstance, 0)
 	screenHWND, err = _CreateWindowEx(0, swc, empty, style, def, def, def, def, _HWND_MESSAGE, 0, hThisInstance, 0)
@@ -369,43 +354,4 @@ func initCommon() (err error) {
 
 func SendMessage(hwnd syscall.Handle, uMsg uint32, wParam uintptr, lParam uintptr) (lResult uintptr) {
 	return sendMessage(hwnd, uMsg, wParam, lParam)
-}
-
-var mainCallback func()
-
-func Main(f func()) (retErr error) {
-	runtime.LockOSThread()
-
-	if err := initCommon(); err != nil {
-		return err
-	}
-
-	if err := initScreenWindow(); err != nil {
-		return err
-	}
-	defer _DestroyWindow(screenHWND)
-
-	if err := initWindowClass(); err != nil {
-		return err
-	}
-
-	// Prime the pump.
-	mainCallback = f
-	_PostMessage(screenHWND, msgMainCallback, 0, 0)
-
-	// Main message pump.
-	var m _MSG
-	for {
-		done, err := _GetMessage(&m, 0, 0, 0)
-		if err != nil {
-			return fmt.Errorf("win32 GetMessage failed: %v", err)
-		}
-		if done == 0 { // WM_QUIT
-			break
-		}
-		_TranslateMessage(&m)
-		_DispatchMessage(&m)
-	}
-
-	return nil
 }

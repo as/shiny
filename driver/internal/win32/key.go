@@ -11,15 +11,17 @@ import (
 	"syscall"
 	"unicode/utf16"
 
-	"github.com/as/shiny/screen"
 	"github.com/as/shiny/event/key"
+	"github.com/as/shiny/screen"
 )
 
+type Key = key.Event
+
+var KeyEvent func(hwnd syscall.Handle, e key.Event)
 var keyboardLayout = _GetKeyboardLayout(0)
 
-func changeLanguage(h syscall.Handle, m uint32, charset, localeID uintptr){
+func changeLanguage(h syscall.Handle, m uint32, charset, localeID uintptr) {
 }
-
 
 func readRune(vKey uint32, scanCode uint8) rune {
 	var (
@@ -198,4 +200,3 @@ var keytab = [256]key.Code{
 	0xDE: key.CodeApostrophe,
 	0xDF: key.CodeUnknown,
 }
-
