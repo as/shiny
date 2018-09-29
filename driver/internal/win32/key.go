@@ -12,7 +12,6 @@ import (
 	"unicode/utf16"
 
 	"github.com/as/shiny/screen"
-
 	"github.com/as/shiny/event/key"
 )
 
@@ -152,19 +151,20 @@ func readRune(vKey uint32, scanCode uint8) rune {
 	return utf16.Decode(buf[:ret])[0]
 }
 
-func sendKeyEvent(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) (lResult uintptr) {const prevMask = 1 << 30
-	
+func sendKeyEvent(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) (lResult uintptr) {
+	const prevMask = 1 << 30
+
 	dir := key.DirNone
-	if msg == _WM_KEYDOWN{
-		if lParam & prevMask != prevMask{
+	if msg == _WM_KEYDOWN {
+		if lParam&prevMask != prevMask {
 			dir = key.DirPress
 		}
-	} else if msg == _WM_KEYUP{
+	} else if msg == _WM_KEYUP {
 		dir = key.DirRelease
 	} else {
 		panic(fmt.Sprintf("win32: unexpected key message: %d", msg))
 	}
-	
+
 	screen.Dev.Key <- key.Event{
 		Rune:      readRune(uint32(wParam), uint8(lParam>>16)),
 		Code:      keytab[byte(wParam)],
