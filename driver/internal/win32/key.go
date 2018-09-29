@@ -15,6 +15,71 @@ import (
 	"github.com/as/shiny/event/key"
 )
 
+var keyboardLayout = _GetKeyboardLayout(0)
+
+func changeLanguage(h syscall.Handle, m uint32, charset, localeID uintptr){
+}
+
+
+func readRune(vKey uint32, scanCode uint8) rune {
+	var (
+		keystate [256]byte
+		buf      [4]uint16
+	)
+	if err := _GetKeyboardState(&keystate[0]); err != nil {
+		panic(fmt.Sprintf("win32: %v", err))
+	}
+	ret := _ToUnicodeEx(vKey, uint32(scanCode), &keystate[0], &buf[0], int32(len(buf)), 0, keyboardLayout)
+	if ret < 1 {
+		return -1
+	}
+	return utf16.Decode(buf[:ret])[0]
+}
+
+func keyModifiers() (m key.Modifiers) {
+	down := func(x int32) bool {
+		// GetKeyState gets the key state at the time of the message, so this is what we want.
+		return _GetKeyState(x)&0x80 != 0
+	}
+
+	if down(_VK_CONTROL) {
+		m |= key.ModControl
+	}
+	if down(_VK_MENU) {
+		m |= key.ModAlt
+	}
+	if down(_VK_SHIFT) {
+		m |= key.ModShift
+	}
+	if down(_VK_LWIN) || down(_VK_RWIN) {
+		m |= key.ModMeta
+	}
+	return m
+}
+
+func sendKeyEvent(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) (lResult uintptr) {
+	const prevMask = 1 << 30
+
+	dir := key.DirNone
+	if msg == _WM_KEYDOWN {
+		if lParam&prevMask != prevMask {
+			dir = key.DirPress
+		}
+	} else if msg == _WM_KEYUP {
+		dir = key.DirRelease
+	} else {
+		panic(fmt.Sprintf("win32: unexpected key message: %d", msg))
+	}
+
+	screen.Dev.Key <- key.Event{
+		Rune:      readRune(uint32(wParam), uint8(lParam>>16)),
+		Code:      keytab[byte(wParam)],
+		Modifiers: keyModifiers(),
+		Direction: dir,
+	}
+	return 0
+}
+
 var keytab = [256]key.Code{
 	0x08: key.CodeDeleteBackspace,
 	0x09: key.CodeTab,
@@ -134,67 +199,3 @@ var keytab = [256]key.Code{
 	0xDF: key.CodeUnknown,
 }
 
-func changeLanguage(h syscall.Handle, m uint32, charset, localeID uintptr){
-	
-}
-
-var keyboardLayout = _GetKeyboardLayout(0)
-
-func readRune(vKey uint32, scanCode uint8) rune {
-	var (
-		keystate [256]byte
-		buf      [4]uint16
-	)
-	if err := _GetKeyboardState(&keystate[0]); err != nil {
-		panic(fmt.Sprintf("win32: %v", err))
-	}
-	ret := _ToUnicodeEx(vKey, uint32(scanCode), &keystate[0], &buf[0], int32(len(buf)), 0, keyboardLayout)
-	if ret < 1 {
-		return -1
-	}
-	return utf16.Decode(buf[:ret])[0]
-}
-
-func keyModifiers() (m key.Modifiers) {
-	down := func(x int32) bool {
-		// GetKeyState gets the key state at the time of the message, so this is what we want.
-		return _GetKeyState(x)&0x80 != 0
-	}
-
-	if down(_VK_CONTROL) {
-		m |= key.ModControl
-	}
-	if down(_VK_MENU) {
-		m |= key.ModAlt
-	}
-	if down(_VK_SHIFT) {
-		m |= key.ModShift
-	}
-	if down(_VK_LWIN) || down(_VK_RWIN) {
-		m |= key.ModMeta
-	}
-	return m
-}
-
-func sendKeyEvent(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) (lResult uintptr) {
-	const prevMask = 1 << 30
-
-	dir := key.DirNone
-	if msg == _WM_KEYDOWN {
-		if lParam&prevMask != prevMask {
-			dir = key.DirPress
-		}
-	} else if msg == _WM_KEYUP {
-		dir = key.DirRelease
-	} else {
-		panic(fmt.Sprintf("win32: unexpected key message: %d", msg))
-	}
-
-	screen.Dev.Key <- key.Event{
-		Rune:      readRune(uint32(wParam), uint8(lParam>>16)),
-		Code:      keytab[byte(wParam)],
-		Modifiers: keyModifiers(),
-		Direction: dir,
-	}
-	return 0
-}
