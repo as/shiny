@@ -30,6 +30,40 @@ func SendScreenMessage(uMsg uint32, wParam uintptr, lParam uintptr) (lResult uin
 	return SendMessage(screenHWND, uMsg, wParam, lParam)
 }
 
+func initScreenWindow() (err error) {
+	const screenWindowClass = "shiny_ScreenWindow"
+	swc, err := syscall.UTF16PtrFromString(screenWindowClass)
+	if err != nil {
+		return err
+	}
+	empty, err := syscall.UTF16PtrFromString("")
+	if err != nil {
+		return err
+	}
+
+	wc := _WNDCLASS{
+		LpszClassName: swc,
+		LpfnWndProc:   syscall.NewCallback(screenWindowWndProc),
+		HIcon:         hDefaultIcon,
+		HCursor:       hDefaultCursor,
+		HInstance:     hThisInstance,
+		HbrBackground: syscall.Handle(_COLOR_BTNFACE + 1),
+	}
+	_, err = _RegisterClass(&wc)
+	if err != nil {
+		return err
+	}
+
+	const (
+		//style = _WS_OVERLAPPEDWINDOW | _WS_VISIBLE | _WS_CHILD
+		style = _WS_OVERLAPPEDWINDOW
+		def   = int32(_CW_USEDEFAULT)
+	)
+	//screenHWND, err = _CreateWindowEx(0, swc, empty, style, def, def, def, def, GetConsoleWindow(), 0, hThisInstance, 0)
+	screenHWND, err = _CreateWindowEx(0, swc, empty, style, def, def, def, def, _HWND_MESSAGE, 0, hThisInstance, 0)
+	return err
+}
+
 func screenWindowWndProc(hwnd syscall.Handle, uMsg uint32, wParam uintptr, lParam uintptr) (lResult uintptr) {
 	switch uMsg {
 	case msgCreateWindow:

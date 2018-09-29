@@ -59,30 +59,33 @@ func keyModifiers() (m key.Modifiers) {
 	return m
 }
 
-func sendKeyEvent(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) (lResult uintptr) {
-	const prevMask = 1 << 30
+type ktab [256]key.Code
 
+func (k *ktab) sendDown(h syscall.Handle, m uint32, w, l uintptr) uintptr {
+	const prev = 1 << 30
 	dir := key.DirNone
-	if msg == _WM_KEYDOWN {
-		if lParam&prevMask != prevMask {
+		if l & prev != prev {
 			dir = key.DirPress
 		}
-	} else if msg == _WM_KEYUP {
-		dir = key.DirRelease
-	} else {
-		panic(fmt.Sprintf("win32: unexpected key message: %d", msg))
-	}
-
 	screen.Dev.Key <- key.Event{
-		Rune:      readRune(uint32(wParam), uint8(lParam>>16)),
-		Code:      keytab[byte(wParam)],
+		Rune:      readRune(uint32(w), byte(l>>16)),
+		Code:      keytab[byte(w)],
 		Modifiers: keyModifiers(),
 		Direction: dir,
 	}
 	return 0
 }
+func (k *ktab) sendUp(h syscall.Handle, m uint32, w, l uintptr) uintptr {
+	screen.Dev.Key <- key.Event{
+		Rune:      readRune(uint32(w), byte(l>>16)),
+		Code:      keytab[byte(w)],
+		Modifiers: keyModifiers(),
+		Direction: key.DirRelease,
+	}
+	return 0
+}
 
-var keytab = [256]key.Code{
+var keytab = ktab{
 	0x08: key.CodeDeleteBackspace,
 	0x09: key.CodeTab,
 	0x0D: key.CodeReturnEnter,
