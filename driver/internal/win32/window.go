@@ -66,9 +66,8 @@ func SendMessage(hwnd syscall.Handle, uMsg uint32, wParam uintptr, lParam uintpt
 func Show(hwnd syscall.Handle) {
 	SendMessage(hwnd, msgShow, 0, 0)
 }
-
 func Release(hwnd syscall.Handle) {
-	_DestroyWindow(hwnd)
+	DestroyWindow(hwnd)
 }
 
 type newWindowParams struct {
@@ -82,7 +81,7 @@ func windowWndProc(hwnd syscall.Handle, uMsg uint32, wParam uintptr, lParam uint
 	if fn != nil {
 		return fn(hwnd, uMsg, wParam, lParam)
 	}
-	return _DefWindowProc(hwnd, uMsg, wParam, lParam)
+	return DefWindowProc(hwnd, uMsg, wParam, lParam)
 }
 
 func newWindow(opts *screen.NewWindowOptions) (syscall.Handle, error) {
@@ -100,7 +99,7 @@ func newWindow(opts *screen.NewWindowOptions) (syscall.Handle, error) {
 	// if opts.Overlay{
 	//		h = GetConsoleWindow()
 	//	}
-	hwnd, err := _CreateWindowEx(0,
+	hwnd, err := CreateWindowEx(0,
 		wcname, title,
 		_WS_OVERLAPPEDWINDOW,
 		_CW_USEDEFAULT, _CW_USEDEFAULT,
@@ -124,7 +123,7 @@ func sendFocus(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResul
 	default:
 		panic(fmt.Sprintf("unexpected focus message: %d", uMsg))
 	}
-	return _DefWindowProc(hwnd, uMsg, wParam, lParam)
+	return DefWindowProc(hwnd, uMsg, wParam, lParam)
 }
 
 func sendClose(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
@@ -134,7 +133,7 @@ func sendClose(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResul
 
 func sendShow(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
 	LifecycleEvent(hwnd, lifecycle.StageVisible)
-	_ShowWindow(hwnd, _SW_SHOWDEFAULT)
+	ShowWindow(hwnd, _SW_SHOWDEFAULT)
 	sendSize(hwnd)
 	return 0
 }

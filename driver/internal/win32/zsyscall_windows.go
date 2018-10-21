@@ -40,6 +40,25 @@ var (
 	modkernel32 = windows.NewLazySystemDLL("kernel32.dll")
 	moduser32   = windows.NewLazySystemDLL("user32.dll")
 
+	procAlphaBlend             = modmsimg32.NewProc("AlphaBlend")
+	procBitBlt                 = modgdi32.NewProc("BitBlt")
+	procCreateCompatibleBitmap = modgdi32.NewProc("CreateCompatibleBitmap")
+	procCreateCompatibleDC     = modgdi32.NewProc("CreateCompatibleDC")
+	procCreateDIBSection       = modgdi32.NewProc("CreateDIBSection")
+	procCreateSolidBrush       = modgdi32.NewProc("CreateSolidBrush")
+	procDeleteDC               = modgdi32.NewProc("DeleteDC")
+	procDeleteObject           = modgdi32.NewProc("DeleteObject")
+	procFillRect               = moduser32.NewProc("FillRect")
+	procModifyWorldTransform   = modgdi32.NewProc("ModifyWorldTransform")
+	procSelectObject           = modgdi32.NewProc("SelectObject")
+	procSetGraphicsMode        = modgdi32.NewProc("SetGraphicsMode")
+	procSetWorldTransform      = modgdi32.NewProc("SetWorldTransform")
+	procStretchBlt             = modgdi32.NewProc("StretchBlt")
+	procGetDeviceCaps          = modgdi32.NewProc("GetDeviceCaps")
+	
+	modmsimg32 = windows.NewLazySystemDLL("msimg32.dll")
+	modgdi32   = windows.NewLazySystemDLL("gdi32.dll")
+
 	procGetConsoleWindow  = modkernel32.NewProc("GetConsoleWindow")
 	procGetDC             = moduser32.NewProc("GetDC")
 	procReleaseDC         = moduser32.NewProc("ReleaseDC")
@@ -103,7 +122,7 @@ func sendMessage(hwnd syscall.Handle, uMsg uint32, wParam uintptr, lParam uintpt
 	return
 }
 
-func _CreateWindowEx(exstyle uint32, className *uint16, windowText *uint16, style uint32, x int32, y int32, width int32, height int32, parent syscall.Handle, menu syscall.Handle, hInstance syscall.Handle, lpParam uintptr) (hwnd syscall.Handle, err error) {
+func CreateWindowEx(exstyle uint32, className *uint16, windowText *uint16, style uint32, x int32, y int32, width int32, height int32, parent syscall.Handle, menu syscall.Handle, hInstance syscall.Handle, lpParam uintptr) (hwnd syscall.Handle, err error) {
 	r0, _, e1 := syscall.Syscall12(procCreateWindowExW.Addr(), 12, uintptr(exstyle), uintptr(unsafe.Pointer(className)), uintptr(unsafe.Pointer(windowText)), uintptr(style), uintptr(x), uintptr(y), uintptr(width), uintptr(height), uintptr(parent), uintptr(menu), uintptr(hInstance), uintptr(lpParam))
 	hwnd = syscall.Handle(r0)
 	if hwnd == 0 {
@@ -116,13 +135,13 @@ func _CreateWindowEx(exstyle uint32, className *uint16, windowText *uint16, styl
 	return
 }
 
-func _DefWindowProc(hwnd syscall.Handle, uMsg uint32, wParam uintptr, lParam uintptr) (lResult uintptr) {
+func DefWindowProc(hwnd syscall.Handle, uMsg uint32, wParam uintptr, lParam uintptr) (lResult uintptr) {
 	r0, _, _ := syscall.Syscall6(procDefWindowProcW.Addr(), 4, uintptr(hwnd), uintptr(uMsg), uintptr(wParam), uintptr(lParam), 0, 0)
 	lResult = uintptr(r0)
 	return
 }
 
-func _DestroyWindow(hwnd syscall.Handle) (err error) {
+func DestroyWindow(hwnd syscall.Handle) (err error) {
 	r1, _, e1 := syscall.Syscall(procDestroyWindow.Addr(), 1, uintptr(hwnd), 0, 0)
 	if r1 == 0 {
 		if e1 != 0 {
@@ -134,13 +153,13 @@ func _DestroyWindow(hwnd syscall.Handle) (err error) {
 	return
 }
 
-func _DispatchMessage(msg *_MSG) (ret int32) {
+func DispatchMessage(msg *_MSG) (ret int32) {
 	r0, _, _ := syscall.Syscall(procDispatchMessageW.Addr(), 1, uintptr(unsafe.Pointer(msg)), 0, 0)
 	ret = int32(r0)
 	return
 }
 
-func _GetClientRect(hwnd syscall.Handle, rect *Rect32) (err error) {
+func GetClientRect(hwnd syscall.Handle, rect *Rect32) (err error) {
 	r1, _, e1 := syscall.Syscall(procGetClientRect.Addr(), 2, uintptr(hwnd), uintptr(unsafe.Pointer(rect)), 0)
 	if r1 == 0 {
 		if e1 != 0 {
@@ -152,7 +171,7 @@ func _GetClientRect(hwnd syscall.Handle, rect *Rect32) (err error) {
 	return
 }
 
-func _GetWindowRect(hwnd syscall.Handle, rect *Rect32) (err error) {
+func GetWindowRect(hwnd syscall.Handle, rect *Rect32) (err error) {
 	r1, _, e1 := syscall.Syscall(procGetWindowRect.Addr(), 2, uintptr(hwnd), uintptr(unsafe.Pointer(rect)), 0)
 	if r1 == 0 {
 		if e1 != 0 {
@@ -164,13 +183,13 @@ func _GetWindowRect(hwnd syscall.Handle, rect *Rect32) (err error) {
 	return
 }
 
-func _GetKeyboardLayout(threadID uint32) (locale syscall.Handle) {
+func GetKeyboardLayout(threadID uint32) (locale syscall.Handle) {
 	r0, _, _ := syscall.Syscall(procGetKeyboardLayout.Addr(), 1, uintptr(threadID), 0, 0)
 	locale = syscall.Handle(r0)
 	return
 }
 
-func _GetKeyboardState(lpKeyState *byte) (err error) {
+func GetKeyboardState(lpKeyState *byte) (err error) {
 	r1, _, e1 := syscall.Syscall(procGetKeyboardState.Addr(), 1, uintptr(unsafe.Pointer(lpKeyState)), 0, 0)
 	if r1 == 0 {
 		if e1 != 0 {
@@ -182,13 +201,13 @@ func _GetKeyboardState(lpKeyState *byte) (err error) {
 	return
 }
 
-func _GetKeyState(virtkey int32) (keystatus int16) {
+func GetKeyState(virtkey int32) (keystatus int16) {
 	r0, _, _ := syscall.Syscall(procGetKeyState.Addr(), 1, uintptr(virtkey), 0, 0)
 	keystatus = int16(r0)
 	return
 }
 
-func _GetMessage(msg *_MSG, hwnd syscall.Handle, msgfiltermin uint32, msgfiltermax uint32) (ret int32, err error) {
+func GetMessage(msg *_MSG, hwnd syscall.Handle, msgfiltermin uint32, msgfiltermax uint32) (ret int32, err error) {
 	r0, _, e1 := syscall.Syscall6(procGetMessageW.Addr(), 4, uintptr(unsafe.Pointer(msg)), uintptr(hwnd), uintptr(msgfiltermin), uintptr(msgfiltermax), 0, 0)
 	ret = int32(r0)
 	if ret == -1 {
@@ -201,7 +220,7 @@ func _GetMessage(msg *_MSG, hwnd syscall.Handle, msgfiltermin uint32, msgfilterm
 	return
 }
 
-func _LoadCursor(hInstance syscall.Handle, cursorName uintptr) (cursor syscall.Handle, err error) {
+func LoadCursor(hInstance syscall.Handle, cursorName uintptr) (cursor syscall.Handle, err error) {
 	r0, _, e1 := syscall.Syscall(procLoadCursorW.Addr(), 2, uintptr(hInstance), uintptr(cursorName), 0)
 	cursor = syscall.Handle(r0)
 	if cursor == 0 {
@@ -214,7 +233,7 @@ func _LoadCursor(hInstance syscall.Handle, cursorName uintptr) (cursor syscall.H
 	return
 }
 
-func _LoadIcon(hInstance syscall.Handle, iconName uintptr) (icon syscall.Handle, err error) {
+func LoadIcon(hInstance syscall.Handle, iconName uintptr) (icon syscall.Handle, err error) {
 	r0, _, e1 := syscall.Syscall(procLoadIconW.Addr(), 2, uintptr(hInstance), uintptr(iconName), 0)
 	icon = syscall.Handle(r0)
 	if icon == 0 {
@@ -227,7 +246,7 @@ func _LoadIcon(hInstance syscall.Handle, iconName uintptr) (icon syscall.Handle,
 	return
 }
 
-func _MoveWindow(hwnd syscall.Handle, x int32, y int32, w int32, h int32, repaint bool) (err error) {
+func MoveWindow(hwnd syscall.Handle, x int32, y int32, w int32, h int32, repaint bool) (err error) {
 	var _p0 uint32
 	if repaint {
 		_p0 = 1
@@ -245,18 +264,18 @@ func _MoveWindow(hwnd syscall.Handle, x int32, y int32, w int32, h int32, repain
 	return
 }
 
-func _PostMessage(hwnd syscall.Handle, uMsg uint32, wParam uintptr, lParam uintptr) (lResult bool) {
+func PostMessage(hwnd syscall.Handle, uMsg uint32, wParam uintptr, lParam uintptr) (lResult bool) {
 	r0, _, _ := syscall.Syscall6(procPostMessageW.Addr(), 4, uintptr(hwnd), uintptr(uMsg), uintptr(wParam), uintptr(lParam), 0, 0)
 	lResult = r0 != 0
 	return
 }
 
-func _PostQuitMessage(exitCode int32) {
+func PostQuitMessage(exitCode int32) {
 	syscall.Syscall(procPostQuitMessage.Addr(), 1, uintptr(exitCode), 0, 0)
 	return
 }
 
-func _RegisterClass(wc *_WNDCLASS) (atom uint16, err error) {
+func RegisterClass(wc *_WNDCLASS) (atom uint16, err error) {
 	r0, _, e1 := syscall.Syscall(procRegisterClassW.Addr(), 1, uintptr(unsafe.Pointer(wc)), 0, 0)
 	atom = uint16(r0)
 	if atom == 0 {
@@ -269,26 +288,206 @@ func _RegisterClass(wc *_WNDCLASS) (atom uint16, err error) {
 	return
 }
 
-func _ShowWindow(hwnd syscall.Handle, cmdshow int32) (wasvisible bool) {
+func ShowWindow(hwnd syscall.Handle, cmdshow int32) (wasvisible bool) {
 	r0, _, _ := syscall.Syscall(procShowWindow.Addr(), 2, uintptr(hwnd), uintptr(cmdshow), 0)
 	wasvisible = r0 != 0
 	return
 }
 
-func _ScreenToClient(hwnd syscall.Handle, lpPoint *Point32) (ok bool) {
+func ScreenToClient(hwnd syscall.Handle, lpPoint *Point32) (ok bool) {
 	r0, _, _ := syscall.Syscall(procScreenToClient.Addr(), 2, uintptr(hwnd), uintptr(unsafe.Pointer(lpPoint)), 0)
 	ok = r0 != 0
 	return
 }
 
-func _ToUnicodeEx(wVirtKey uint32, wScanCode uint32, lpKeyState *byte, pwszBuff *uint16, cchBuff int32, wFlags uint32, dwhkl syscall.Handle) (ret int32) {
+func ToUnicodeEx(wVirtKey uint32, wScanCode uint32, lpKeyState *byte, pwszBuff *uint16, cchBuff int32, wFlags uint32, dwhkl syscall.Handle) (ret int32) {
 	r0, _, _ := syscall.Syscall9(procToUnicodeEx.Addr(), 7, uintptr(wVirtKey), uintptr(wScanCode), uintptr(unsafe.Pointer(lpKeyState)), uintptr(unsafe.Pointer(pwszBuff)), uintptr(cchBuff), uintptr(wFlags), uintptr(dwhkl), 0, 0)
 	ret = int32(r0)
 	return
 }
 
-func _TranslateMessage(msg *_MSG) (done bool) {
+func TranslateMessage(msg *_MSG) (done bool) {
 	r0, _, _ := syscall.Syscall(procTranslateMessage.Addr(), 1, uintptr(unsafe.Pointer(msg)), 0, 0)
 	done = r0 != 0
+	return
+}
+
+func AlphaBlend(dcdest syscall.Handle, xoriginDest int32, yoriginDest int32, wDest int32, hDest int32, dcsrc syscall.Handle, xoriginSrc int32, yoriginSrc int32, wsrc int32, hsrc int32, ftn uintptr) (err error) {
+	r1, _, e1 := syscall.Syscall12(procAlphaBlend.Addr(), 11, uintptr(dcdest), uintptr(xoriginDest), uintptr(yoriginDest), uintptr(wDest), uintptr(hDest), uintptr(dcsrc), uintptr(xoriginSrc), uintptr(yoriginSrc), uintptr(wsrc), uintptr(hsrc), uintptr(ftn), 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func BitBlt(dcdest syscall.Handle, xdest int32, ydest int32, width int32, height int32, dcsrc syscall.Handle, xsrc int32, ysrc int32, rop uint32) (err error) {
+	r1, _, e1 := syscall.Syscall9(procBitBlt.Addr(), 9, uintptr(dcdest), uintptr(xdest), uintptr(ydest), uintptr(width), uintptr(height), uintptr(dcsrc), uintptr(xsrc), uintptr(ysrc), uintptr(rop))
+	if r1 == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func CreateCompatibleBitmap(dc syscall.Handle, width int32, height int32) (bitmap syscall.Handle, err error) {
+	r0, _, e1 := syscall.Syscall(procCreateCompatibleBitmap.Addr(), 3, uintptr(dc), uintptr(width), uintptr(height))
+	bitmap = syscall.Handle(r0)
+	if bitmap == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func CreateCompatibleDC(dc syscall.Handle) (newdc syscall.Handle, err error) {
+	r0, _, e1 := syscall.Syscall(procCreateCompatibleDC.Addr(), 1, uintptr(dc), 0, 0)
+	newdc = syscall.Handle(r0)
+	if newdc == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func CreateDIBSection(dc syscall.Handle, bmi *BitmapInfo, usage uint32, bits **byte, section syscall.Handle, offset uint32) (bitmap syscall.Handle, err error) {
+	r0, _, e1 := syscall.Syscall6(procCreateDIBSection.Addr(), 6, uintptr(dc), uintptr(unsafe.Pointer(bmi)), uintptr(usage), uintptr(unsafe.Pointer(bits)), uintptr(section), uintptr(offset))
+	bitmap = syscall.Handle(r0)
+	if bitmap == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func CreateSolidBrush(color ColorRef) (brush syscall.Handle, err error) {
+	r0, _, e1 := syscall.Syscall(procCreateSolidBrush.Addr(), 1, uintptr(color), 0, 0)
+	brush = syscall.Handle(r0)
+	if brush == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func DeleteDC(dc syscall.Handle) (err error) {
+	r1, _, e1 := syscall.Syscall(procDeleteDC.Addr(), 1, uintptr(dc), 0, 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func DeleteObject(object syscall.Handle) (err error) {
+	r1, _, e1 := syscall.Syscall(procDeleteObject.Addr(), 1, uintptr(object), 0, 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func FillRect(dc syscall.Handle, rc *Rect32, brush syscall.Handle) (err error) {
+	r1, _, e1 := syscall.Syscall(procFillRect.Addr(), 3, uintptr(dc), uintptr(unsafe.Pointer(rc)), uintptr(brush))
+	if r1 == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func ModifyWorldTransform(dc syscall.Handle, x *XFORM, mode uint32) (err error) {
+	r1, _, e1 := syscall.Syscall(procModifyWorldTransform.Addr(), 3, uintptr(dc), uintptr(unsafe.Pointer(x)), uintptr(mode))
+	if r1 == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func SelectObject(dc syscall.Handle, gdiobj syscall.Handle) (newobj syscall.Handle, err error) {
+	r0, _, e1 := syscall.Syscall(procSelectObject.Addr(), 2, uintptr(dc), uintptr(gdiobj), 0)
+	newobj = syscall.Handle(r0)
+	if newobj == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func SetGraphicsMode(dc syscall.Handle, mode int32) (oldmode int32, err error) {
+	r0, _, e1 := syscall.Syscall(procSetGraphicsMode.Addr(), 2, uintptr(dc), uintptr(mode), 0)
+	oldmode = int32(r0)
+	if oldmode == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func SetWorldTransform(dc syscall.Handle, x *XFORM) (err error) {
+	r1, _, e1 := syscall.Syscall(procSetWorldTransform.Addr(), 2, uintptr(dc), uintptr(unsafe.Pointer(x)), 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func StretchBlt(dcdest syscall.Handle, xdest int32, ydest int32, wdest int32, hdest int32, dcsrc syscall.Handle, xsrc int32, ysrc int32, wsrc int32, hsrc int32, rop uint32) (err error) {
+	r1, _, e1 := syscall.Syscall12(procStretchBlt.Addr(), 11, uintptr(dcdest), uintptr(xdest), uintptr(ydest), uintptr(wdest), uintptr(hdest), uintptr(dcsrc), uintptr(xsrc), uintptr(ysrc), uintptr(wsrc), uintptr(hsrc), uintptr(rop), 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func GetDeviceCaps(dc syscall.Handle, index int32) (ret int32) {
+	r0, _, _ := syscall.Syscall(procGetDeviceCaps.Addr(), 2, uintptr(dc), uintptr(index), 0)
+	ret = int32(r0)
 	return
 }

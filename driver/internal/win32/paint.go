@@ -15,5 +15,5 @@ var PaintEvent func(hwnd syscall.Handle, e paint.Event)
 
 func sendPaint(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
 	screen.SendPaint(Paint{})
-	return _DefWindowProc(hwnd, uMsg, wParam, lParam)
+	return DefWindowProc(hwnd, uMsg, wParam, lParam)
 }

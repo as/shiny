@@ -69,14 +69,14 @@ func handleCreateTexture(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintpt
 	}
 	defer win32.ReleaseDC(0, screenDC)
 
-	dc, err := _CreateCompatibleDC(screenDC)
+	dc, err := win32.CreateCompatibleDC(screenDC)
 	if err != nil {
 		p.err = err
 		return
 	}
-	bitmap, err := _CreateCompatibleBitmap(screenDC, int32(p.size.X), int32(p.size.Y))
+	bitmap, err := win32.CreateCompatibleBitmap(screenDC, int32(p.size.X), int32(p.size.Y))
 	if err != nil {
-		_DeleteDC(dc)
+		win32.DeleteDC(dc)
 		p.err = err
 		return
 	}
@@ -112,11 +112,11 @@ func (t *textureImpl) release() error {
 	}
 	t.released = true
 
-	err := _DeleteObject(t.bitmap)
+	err := win32.DeleteObject(t.bitmap)
 	if err != nil {
 		return err
 	}
-	return _DeleteDC(t.dc)
+	return win32.DeleteDC(t.dc)
 }
 
 func (t *textureImpl) Size() image.Point {
@@ -137,7 +137,7 @@ func (t *textureImpl) update(f func(dc syscall.Handle) error) (retErr error) {
 	// Select t.bitmap into t.dc, so our drawing gets recorded
 	// into t.bitmap and not into 1x1 default bitmap created
 	// during CreateCompatibleDC call.
-	_, err := _SelectObject(t.dc, t.bitmap)
+	_, err := win32.SelectObject(t.dc, t.bitmap)
 	if err != nil {
 		return err
 	}

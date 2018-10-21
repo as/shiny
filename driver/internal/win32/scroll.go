@@ -15,7 +15,7 @@ func sendScrollEvent(hwnd syscall.Handle, _ uint32, wp, lp uintptr) (lResult uin
 	
 	// Convert from screen to window coordinates.
 	p := Point32{int32(uint16(lp)), int32(uint16(lp>>16))}
-	_ScreenToClient(hwnd, &p)
+	ScreenToClient(hwnd, &p)
 	
 	e := mouse.Event{
 		X:         float32(p.X),

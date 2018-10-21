@@ -21,17 +21,17 @@ func ResizeClientRect(hwnd syscall.Handle, opts *screen.NewWindowOptions) error 
 		return nil
 	}
 	var cr, wr Rect32
-	err := _GetClientRect(hwnd, &cr)
+	err := GetClientRect(hwnd, &cr)
 	if err != nil {
 		return err
 	}
-	err = _GetWindowRect(hwnd, &wr)
+	err = GetWindowRect(hwnd, &wr)
 	if err != nil {
 		return err
 	}
 	w := wr.Dx() - (cr.Max.X - int32(opts.Width))
 	h := wr.Dy()- (cr.Max.Y - int32(opts.Height))
-	return _MoveWindow(hwnd, wr.Min.X, wr.Min.Y, w, h, false)
+	return MoveWindow(hwnd, wr.Min.X, wr.Min.Y, w, h, false)
 }
 
 func sendSizeEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
@@ -45,7 +45,7 @@ func sendSizeEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lR
 
 func sendSize(hwnd syscall.Handle) {
 	var r Rect32
-	if err := _GetClientRect(hwnd, &r); err != nil {
+	if err := GetClientRect(hwnd, &r); err != nil {
 		panic(err) // TODO(andlabs)
 	}
 

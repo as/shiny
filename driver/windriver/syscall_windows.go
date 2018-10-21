@@ -8,16 +8,6 @@ import (
 	"unsafe"
 )
 
-type _COLORREF uint32
-
-func _RGB(r, g, b byte) _COLORREF {
-	return _COLORREF(r) | _COLORREF(g)<<8 | _COLORREF(b)<<16
-}
-
-
-
-
-
 type _RECT struct {
 	Left   int32
 	Top    int32

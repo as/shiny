@@ -64,7 +64,7 @@ func (s *screenImpl) NewWindow(opts *screen.NewWindowOptions) (screen.Window, er
 	if err != nil {
 		return nil, err
 	}
-	_, err = _SetGraphicsMode(dc, _GM_ADVANCED)
+	_, err = win32.SetGraphicsMode(dc, _GM_ADVANCED)
 	if err != nil {
 		return nil, err
 	}

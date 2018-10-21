@@ -99,20 +99,20 @@ func drawWindow(dc syscall.Handle, src2dst f64.Aff3, src interface{}, sr image.R
 		// general drawing
 		dr = sr.Sub(sr.Min)
 
-		x := _XFORM{
-			eM11: +float32(src2dst[0]),
-			eM12: -float32(src2dst[1]),
-			eM21: -float32(src2dst[3]),
-			eM22: +float32(src2dst[4]),
-			eDx:  +float32(src2dst[2]),
-			eDy:  +float32(src2dst[5]),
+		x := win32.XFORM{
+			M11: +float32(src2dst[0]),
+			M12: -float32(src2dst[1]),
+			M21: -float32(src2dst[3]),
+			M22: +float32(src2dst[4]),
+			Dx:  +float32(src2dst[2]),
+			Dy:  +float32(src2dst[5]),
 		}
-		err := _SetWorldTransform(dc, &x)
+		err := win32.SetWorldTransform(dc, &x)
 		if err != nil {
 			return err
 		}
 		defer func() {
-			err := _ModifyWorldTransform(dc, nil, _MWT_IDENTITY)
+			err := win32.ModifyWorldTransform(dc, nil, _MWT_IDENTITY)
 			if retErr == nil {
 				retErr = err
 			}

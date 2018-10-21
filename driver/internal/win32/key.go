@@ -18,7 +18,7 @@ import (
 type Key = key.Event
 
 var KeyEvent func(hwnd syscall.Handle, e key.Event)
-var keyboardLayout = _GetKeyboardLayout(0)
+var keyboardLayout = GetKeyboardLayout(0)
 
 func changeLanguage(h syscall.Handle, m uint32, charset, localeID uintptr) {
 }
@@ -28,10 +28,10 @@ func readRune(vKey uint32, scanCode uint8) rune {
 		keystate [256]byte
 		buf      [4]uint16
 	)
-	if err := _GetKeyboardState(&keystate[0]); err != nil {
+	if err := GetKeyboardState(&keystate[0]); err != nil {
 		panic(fmt.Sprintf("win32: %v", err))
 	}
-	ret := _ToUnicodeEx(vKey, uint32(scanCode), &keystate[0], &buf[0], int32(len(buf)), 0, keyboardLayout)
+	ret := ToUnicodeEx(vKey, uint32(scanCode), &keystate[0], &buf[0], int32(len(buf)), 0, keyboardLayout)
 	if ret < 1 {
 		return -1
 	}
@@ -41,7 +41,7 @@ func readRune(vKey uint32, scanCode uint8) rune {
 func keyModifiers() (m key.Modifiers) {
 	down := func(x int32) bool {
 		// GetKeyState gets the key state at the time of the message, so this is what we want.
-		return _GetKeyState(x)&0x80 != 0
+		return GetKeyState(x)&0x80 != 0
 	}
 
 	if down(_VK_CONTROL) {

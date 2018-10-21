@@ -13,12 +13,14 @@ import (
 	"image/draw"
 	"syscall"
 	"unsafe"
+
+	"github.com/as/shiny/driver/internal/win32"
 )
 
 func mkbitmap(size image.Point) (syscall.Handle, *byte, error) {
-	bi := _BITMAPINFO{
-		Header: BitmapInfoV4{
-			Size:        uint32(unsafe.Sizeof(BitmapInfoV4{})),
+	bi := win32.BitmapInfo{
+		Header: win32.BitmapInfoV4{
+			Size:        uint32(unsafe.Sizeof(win32.BitmapInfoV4{})),
 			Width:       int32(size.X),
 			Height:      -int32(size.Y), // negative height to force top-down drawing
 			Planes:      1,
@@ -29,7 +31,7 @@ func mkbitmap(size image.Point) (syscall.Handle, *byte, error) {
 	}
 
 	var ppvBits *byte
-	bitmap, err := _CreateDIBSection(0, &bi, _DIB_RGB_COLORS, &ppvBits, 0, 0)
+	bitmap, err := win32.CreateDIBSection(0, &bi, _DIB_RGB_COLORS, &ppvBits, 0, 0)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -44,23 +46,23 @@ var blendOverFunc = _BLENDFUNCTION{
 }
 
 func copyBitmapToDC(dc syscall.Handle, dr image.Rectangle, src syscall.Handle, sr image.Rectangle, op draw.Op) (retErr error) {
-	memdc, err := _CreateCompatibleDC(dc)
+	memdc, err := win32.CreateCompatibleDC(dc)
 	if err != nil {
 		return err
 	}
-	defer _DeleteDC(memdc)
+	defer win32.DeleteDC(memdc)
 
-	_, err = _SelectObject(memdc, src)
+	_, err = win32.SelectObject(memdc, src)
 	if err != nil {
 		return err
 	}
 
 	switch op {
 	case draw.Src:
-		return _StretchBlt(dc, int32(dr.Min.X), int32(dr.Min.Y), int32(dr.Dx()), int32(dr.Dy()),
+		return win32.StretchBlt(dc, int32(dr.Min.X), int32(dr.Min.Y), int32(dr.Dx()), int32(dr.Dy()),
 			memdc, int32(sr.Min.X), int32(sr.Min.Y), int32(sr.Dx()), int32(sr.Dy()), _SRCCOPY)
 	case draw.Over:
-		return _AlphaBlend(dc, int32(dr.Min.X), int32(dr.Min.Y), int32(dr.Dx()), int32(dr.Dy()),
+		return win32.AlphaBlend(dc, int32(dr.Min.X), int32(dr.Min.Y), int32(dr.Dx()), int32(dr.Dy()),
 			memdc, int32(sr.Min.X), int32(sr.Min.Y), int32(sr.Dx()), int32(sr.Dy()), blendOverFunc.ToUintptr())
 	default:
 		return fmt.Errorf("windriver: invalid draw operation %v", op)
@@ -68,42 +70,34 @@ func copyBitmapToDC(dc syscall.Handle, dr image.Rectangle, src syscall.Handle, s
 }
 
 func fill(dc syscall.Handle, dr image.Rectangle, c color.Color, op draw.Op) error {
-	r, g, b, a := c.RGBA()
-	r >>= 8
-	g >>= 8
-	b >>= 8
-	a >>= 8
+	const bgrmask = ((1 << 24) - 1)
+	cr := win32.NewColorRef(c)
 
 	if op == draw.Src {
-		color := _RGB(byte(r), byte(g), byte(b))
-		brush, err := _CreateSolidBrush(color)
+		brush, err := win32.CreateSolidBrush(cr & bgrmask)
 		if err != nil {
 			return err
 		}
-		defer _DeleteObject(brush)
+		defer win32.DeleteObject(brush)
 
-		rect := _RECT{
-			Left:   int32(dr.Min.X),
-			Top:    int32(dr.Min.Y),
-			Right:  int32(dr.Max.X),
-			Bottom: int32(dr.Max.Y),
-		}
-		return _FillRect(dc, &rect, brush)
+		return win32.FillRect(dc, &win32.Rect32{
+			win32.Point32{int32(dr.Min.X), int32(dr.Min.Y)},
+			win32.Point32{int32(dr.Max.X), int32(dr.Max.Y)},
+		}, brush)
 	}
 
 	// AlphaBlend will stretch the input image (using StretchBlt's
 	// COLORONCOLOR mode) to fill the output rectangle. Testing
 	// this shows that the result appears to be the same as if we had
 	// used a MxN bitmap instead.
-	sr := image.Rect(0, 0, 1, 1)
-	bitmap, bitvalues, err := mkbitmap(sr.Size())
+	sr := image.Rectangle{image.ZP, image.Point{1, 1}}
+	bitmap, bitvalues, err := mkbitmap(sr.Max)
 	if err != nil {
 		return err
 	}
-	defer _DeleteObject(bitmap) // TODO handle error?
+	defer win32.DeleteObject(bitmap)
 
-	color := _COLORREF((a << 24) | (r << 16) | (g << 8) | b)
-	*(*_COLORREF)(unsafe.Pointer(bitvalues)) = color
+	*(*win32.ColorRef)(unsafe.Pointer(bitvalues)) = cr
 
 	return copyBitmapToDC(dc, dr, bitmap, sr, draw.Over)
 }

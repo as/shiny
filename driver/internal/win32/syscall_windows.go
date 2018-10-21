@@ -6,27 +6,131 @@ package win32
 
 import (
 	"syscall"
+	"unsafe"
 )
 
-type _COLORREF uint32
+const (
+	_BI_RGB         = 0
+	_BI_BITFIELDS   = 3
+	_DIB_RGB_COLORS = 0
 
-func _RGB(r, g, b byte) _COLORREF {
-	return _COLORREF(r) | _COLORREF(g)<<8 | _COLORREF(b)<<16
+	_AC_SRC_OVER  = 0x00
+	_AC_SRC_ALPHA = 0x01
+
+	_SRCCOPY = 0x00cc0020
+)
+
+const (
+	_GM_COMPATIBLE = 1
+	_GM_ADVANCED   = 2
+	_MWT_IDENTITY  = 1
+)
+
+type XFORM struct {
+	M11 float32
+	M12 float32
+	M21 float32
+	M22 float32
+	Dx  float32
+	Dy  float32
+}
+
+type BitmapInfoV4 struct {
+	Size                    uint32
+	Width                   int32
+	Height                  int32
+	Planes                  uint16
+	BitCount                uint16
+	Compression             uint32
+	SizeImage               uint32
+	XPelsPerMeter           int32
+	YPelsPerMeter           int32
+	ClrUsed                 uint32
+	ClrImportant            uint32
+	Red, Green, Blue, Alpha uint32
+	Endpoints               [3]uint32
+	Gamma                   [3]uint32
+}
+
+type _BITMAPINFOHEADER struct {
+	Size          uint32
+	Width         int32
+	Height        int32
+	Planes        uint16
+	BitCount      uint16
+	Compression   uint32
+	SizeImage     uint32
+	XPelsPerMeter int32
+	YPelsPerMeter int32
+	ClrUsed       uint32
+	ClrImportant  uint32
+}
+
+type _RGBQUAD struct {
+	Blue     byte
+	Green    byte
+	Red      byte
+	Reserved byte
+}
+
+type BitmapInfo struct {
+	Header BitmapInfoV4
+	Colors [1]_RGBQUAD
+}
+
+type _BLENDFUNCTION struct {
+	BlendOp             byte
+	BlendFlags          byte
+	SourceConstantAlpha byte
+	AlphaFormat         byte
+}
+
+// ToUintptr helps to pass bf to syscall.Syscall.
+func (bf _BLENDFUNCTION) ToUintptr() uintptr {
+	return *((*uintptr)(unsafe.Pointer(&bf)))
+}
+
+type ColorRef uint32
+
+func NewColorRef(c interface {
+	RGBA() (r, g, b, a uint32)
+}) ColorRef {
+	type cr = ColorRef
+	r, g, b, a := c.RGBA()
+	return cr(r>>8) | cr(g>>8)<<8 | cr(b>>8)<<16 | cr(a>>8)<<24
+}
+
+func RGB(r, g, b byte) ColorRef {
+	return ColorRef(r) | ColorRef(g)<<8 | ColorRef(b)<<16
 }
 
 type Point32 struct {
 	X int32
 	Y int32
 }
-func (r Rect32) Dx() int32{
-	return r.Max.X - r.Min.X
-}
-func (r Rect32) Dy() int32 {
-	return r.Max.Y - r.Min.Y
+
+func Rect(r struct{ Min, Max struct{ X, Y int } }) Rect32 {
+	return Rect32{
+		Min: Point32{
+			int32(r.Min.X),
+			int32(r.Min.Y),
+		},
+		Max: Point32{
+			int32(r.Max.X),
+			int32(r.Max.Y),
+		},
+	}
 }
 
 type Rect32 struct {
 	Min, Max Point32
+}
+
+func (r Rect32) Dx() int32 {
+	return r.Max.X - r.Min.X
+}
+func (r Rect32) Dy() int32 {
+	return r.Max.Y - r.Min.Y
 }
 
 type _MSG struct {
@@ -83,15 +187,15 @@ const (
 )
 
 const (
-	_WS_BORDER = 0x00800000
-	_WS_CAPTION = 0x00C00000
-	_WS_CHILD= 0x40000000
-	_WS_CLIPCHILDREN= 0x02000000
-	_WS_CLIPSIBLINGS= 0x04000000
-	_WS_DISABLED= 0x08000000
-	_WS_DLGFRAME= 0x00400000
-	_WS_VISIBLE = 0x10000000
-	
+	_WS_BORDER       = 0x00800000
+	_WS_CAPTION      = 0x00C00000
+	_WS_CHILD        = 0x40000000
+	_WS_CLIPCHILDREN = 0x02000000
+	_WS_CLIPSIBLINGS = 0x04000000
+	_WS_DISABLED     = 0x08000000
+	_WS_DLGFRAME     = 0x00400000
+	_WS_VISIBLE      = 0x10000000
+
 	_WS_OVERLAPPED       = 0x00000000
 	_WS_SYSMENU          = 0x00080000
 	_WS_THICKFRAME       = 0x00040000
@@ -154,15 +258,6 @@ const (
 	_SWP_NOSIZE     = 0x0001
 )
 
-const (
-	_BI_RGB         = 0
-	_DIB_RGB_COLORS = 0
-	_AC_SRC_OVER    = 0x00
-	_AC_SRC_ALPHA   = 0x01
-	_SRCCOPY        = 0x00cc0020
-	_WHEEL_DELTA    = 120
-)
-
 func _GET_X_LPARAM(lp uintptr) int32 {
 	return int32(_LOWORD(lp))
 }
@@ -194,23 +289,39 @@ func _HIWORD(l uintptr) uint16 {
 //sys	ReleaseDC(hwnd syscall.Handle, dc syscall.Handle) (err error) = user32.ReleaseDC
 //sys	sendMessage(hwnd syscall.Handle, uMsg uint32, wParam uintptr, lParam uintptr) (lResult uintptr) = user32.SendMessageW
 
-//sys	_CreateWindowEx(exstyle uint32, className *uint16, windowText *uint16, style uint32, x int32, y int32, width int32, height int32, parent syscall.Handle, menu syscall.Handle, hInstance syscall.Handle, lpParam uintptr) (hwnd syscall.Handle, err error) = user32.CreateWindowExW
-//sys	_DefWindowProc(hwnd syscall.Handle, uMsg uint32, wParam uintptr, lParam uintptr) (lResult uintptr) = user32.DefWindowProcW
-//sys	_DestroyWindow(hwnd syscall.Handle) (err error) = user32.DestroyWindow
-//sys	_DispatchMessage(msg *_MSG) (ret int32) = user32.DispatchMessageW
-//sys	_GetClientRect(hwnd syscall.Handle, rect *_RECT) (err error) = user32.GetClientRect
-//sys	_GetWindowRect(hwnd syscall.Handle, rect *_RECT) (err error) = user32.GetWindowRect
-//sys   _GetKeyboardLayout(threadID uint32) (locale syscall.Handle) = user32.GetKeyboardLayout
-//sys   _GetKeyboardState(lpKeyState *byte) (err error) = user32.GetKeyboardState
-//sys	_GetKeyState(virtkey int32) (keystatus int16) = user32.GetKeyState
-//sys	_GetMessage(msg *_MSG, hwnd syscall.Handle, msgfiltermin uint32, msgfiltermax uint32) (ret int32, err error) [failretval==-1] = user32.GetMessageW
-//sys	_LoadCursor(hInstance syscall.Handle, cursorName uintptr) (cursor syscall.Handle, err error) = user32.LoadCursorW
-//sys	_LoadIcon(hInstance syscall.Handle, iconName uintptr) (icon syscall.Handle, err error) = user32.LoadIconW
-//sys	_MoveWindow(hwnd syscall.Handle, x int32, y int32, w int32, h int32, repaint bool) (err error) = user32.MoveWindow
-//sys	_PostMessage(hwnd syscall.Handle, uMsg uint32, wParam uintptr, lParam uintptr) (lResult bool) = user32.PostMessageW
-//sys   _PostQuitMessage(exitCode int32) = user32.PostQuitMessage
-//sys	_RegisterClass(wc *_WNDCLASS) (atom uint16, err error) = user32.RegisterClassW
-//sys	_ShowWindow(hwnd syscall.Handle, cmdshow int32) (wasvisible bool) = user32.ShowWindow
-//sys	_ScreenToClient(hwnd syscall.Handle, lpPoint *_POINT) (ok bool) = user32.ScreenToClient
-//sys   _ToUnicodeEx(wVirtKey uint32, wScanCode uint32, lpKeyState *byte, pwszBuff *uint16, cchBuff int32, wFlags uint32, dwhkl syscall.Handle) (ret int32) = user32.ToUnicodeEx
-//sys	_TranslateMessage(msg *_MSG) (done bool) = user32.TranslateMessage
+//sys	CreateWindowEx(exstyle uint32, className *uint16, windowText *uint16, style uint32, x int32, y int32, width int32, height int32, parent syscall.Handle, menu syscall.Handle, hInstance syscall.Handle, lpParam uintptr) (hwnd syscall.Handle, err error) = user32.CreateWindowExW
+//sys	DefWindowProc(hwnd syscall.Handle, uMsg uint32, wParam uintptr, lParam uintptr) (lResult uintptr) = user32.DefWindowProcW
+//sys	DestroyWindow(hwnd syscall.Handle) (err error) = user32.DestroyWindow
+//sys	DispatchMessage(msg *_MSG) (ret int32) = user32.DispatchMessageW
+//sys	GetClientRect(hwnd syscall.Handle, rect *_RECT) (err error) = user32.GetClientRect
+//sys	GetWindowRect(hwnd syscall.Handle, rect *_RECT) (err error) = user32.GetWindowRect
+//sys   GetKeyboardLayout(threadID uint32) (locale syscall.Handle) = user32.GetKeyboardLayout
+//sys   GetKeyboardState(lpKeyState *byte) (err error) = user32.GetKeyboardState
+//sys	GetKeyState(virtkey int32) (keystatus int16) = user32.GetKeyState
+//sys	GetMessage(msg *_MSG, hwnd syscall.Handle, msgfiltermin uint32, msgfiltermax uint32) (ret int32, err error) [failretval==-1] = user32.GetMessageW
+//sys	LoadCursor(hInstance syscall.Handle, cursorName uintptr) (cursor syscall.Handle, err error) = user32.LoadCursorW
+//sys	LoadIcon(hInstance syscall.Handle, iconName uintptr) (icon syscall.Handle, err error) = user32.LoadIconW
+//sys	MoveWindow(hwnd syscall.Handle, x int32, y int32, w int32, h int32, repaint bool) (err error) = user32.MoveWindow
+//sys	PostMessage(hwnd syscall.Handle, uMsg uint32, wParam uintptr, lParam uintptr) (lResult bool) = user32.PostMessageW
+//sys   PostQuitMessage(exitCode int32) = user32.PostQuitMessage
+//sys	RegisterClass(wc *_WNDCLASS) (atom uint16, err error) = user32.RegisterClassW
+//sys	ShowWindow(hwnd syscall.Handle, cmdshow int32) (wasvisible bool) = user32.ShowWindow
+//sys	ScreenToClient(hwnd syscall.Handle, lpPoint *_POINT) (ok bool) = user32.ScreenToClient
+//sys   ToUnicodeEx(wVirtKey uint32, wScanCode uint32, lpKeyState *byte, pwszBuff *uint16, cchBuff int32, wFlags uint32, dwhkl syscall.Handle) (ret int32) = user32.ToUnicodeEx
+//sys	TranslateMessage(msg *_MSG) (done bool) = user32.TranslateMessage
+
+//sys	AlphaBlend(dcdest syscall.Handle, xoriginDest int32, yoriginDest int32, wDest int32, hDest int32, dcsrc syscall.Handle, xoriginSrc int32, yoriginSrc int32, wsrc int32, hsrc int32, ftn uintptr) (err error) = msimg32.AlphaBlend
+//sys	BitBlt(dcdest syscall.Handle, xdest int32, ydest int32, width int32, height int32, dcsrc syscall.Handle, xsrc int32, ysrc int32, rop uint32) (err error) = gdi32.BitBlt
+//sys	CreateCompatibleBitmap(dc syscall.Handle, width int32, height int32) (bitmap syscall.Handle, err error) = gdi32.CreateCompatibleBitmap
+//sys	CreateCompatibleDC(dc syscall.Handle) (newdc syscall.Handle, err error) = gdi32.CreateCompatibleDC
+//sys	CreateDIBSection(dc syscall.Handle, bmi *_BITMAPINFO, usage uint32, bits **byte, section syscall.Handle, offset uint32) (bitmap syscall.Handle, err error) = gdi32.CreateDIBSection
+//sys	CreateSolidBrush(color _COLORREF) (brush syscall.Handle, err error) = gdi32.CreateSolidBrush
+//sys	DeleteDC(dc syscall.Handle) (err error) = gdi32.DeleteDC
+//sys	DeleteObject(object syscall.Handle) (err error) = gdi32.DeleteObject
+//sys	FillRect(dc syscall.Handle, rc *_RECT, brush syscall.Handle) (err error) = user32.FillRect
+//sys	ModifyWorldTransform(dc syscall.Handle, x *_XFORM, mode uint32) (err error) = gdi32.ModifyWorldTransform
+//sys	SelectObject(dc syscall.Handle, gdiobj syscall.Handle) (newobj syscall.Handle, err error) = gdi32.SelectObject
+//sys	SetGraphicsMode(dc syscall.Handle, mode int32) (oldmode int32, err error) = gdi32.SetGraphicsMode
+//sys	SetWorldTransform(dc syscall.Handle, x *_XFORM) (err error) = gdi32.SetWorldTransform
+//sys	StretchBlt(dcdest syscall.Handle, xdest int32, ydest int32, wdest int32, hdest int32, dcsrc syscall.Handle, xsrc int32, ysrc int32, wsrc int32, hsrc int32, rop uint32) (err error) = gdi32.StretchBlt
+//sys	GetDeviceCaps(dc syscall.Handle, index int32) (ret int32) = gdi32.GetDeviceCaps

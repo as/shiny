@@ -36,11 +36,11 @@ var (
 )
 
 func initCommon() (err error) {
-	hDefaultIcon, err = _LoadIcon(0, _IDI_APPLICATION)
+	hDefaultIcon, err = LoadIcon(0, _IDI_APPLICATION)
 	if err != nil {
 		return err
 	}
-	hDefaultCursor, err = _LoadCursor(0, _IDC_ARROW)
+	hDefaultCursor, err = LoadCursor(0, _IDC_ARROW)
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func initWindowClass() (err error) {
 	if err != nil {
 		return err
 	}
-	_, err = _RegisterClass(&_WNDCLASS{
+	_, err = RegisterClass(&_WNDCLASS{
 		Style:         CS_OWNDC,
 		LpszClassName: wcname,
 		LpfnWndProc:   syscall.NewCallback(windowWndProc),

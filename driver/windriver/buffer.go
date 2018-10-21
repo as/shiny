@@ -10,6 +10,8 @@ import (
 	"image"
 	"image/draw"
 	"syscall"
+
+	"github.com/as/shiny/driver/internal/win32"
 )
 
 type bufferImpl struct {
@@ -41,7 +43,7 @@ func (b *bufferImpl) Release() {
 func (b *bufferImpl) cleanUp() {
 	if b.rgba.Pix != nil {
 		b.rgba.Pix = nil
-		_DeleteObject(b.hbitmap)
+		win32.DeleteObject(b.hbitmap)
 	}
 }
 
