@@ -20,7 +20,7 @@ func ResizeClientRect(hwnd syscall.Handle, opts *screen.NewWindowOptions) error 
 	if opts == nil || opts.Width <= 0 || opts.Height <= 0 {
 		return nil
 	}
-	var cr, wr _RECT
+	var cr, wr Rect32
 	err := _GetClientRect(hwnd, &cr)
 	if err != nil {
 		return err
@@ -29,9 +29,9 @@ func ResizeClientRect(hwnd syscall.Handle, opts *screen.NewWindowOptions) error 
 	if err != nil {
 		return err
 	}
-	w := (wr.Right - wr.Left) - (cr.Right - int32(opts.Width))
-	h := (wr.Bottom - wr.Top) - (cr.Bottom - int32(opts.Height))
-	return _MoveWindow(hwnd, wr.Left, wr.Top, w, h, false)
+	w := wr.Dx() - (cr.Max.X - int32(opts.Width))
+	h := wr.Dy()- (cr.Max.Y - int32(opts.Height))
+	return _MoveWindow(hwnd, wr.Min.X, wr.Min.Y, w, h, false)
 }
 
 func sendSizeEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
@@ -44,18 +44,17 @@ func sendSizeEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lR
 }
 
 func sendSize(hwnd syscall.Handle) {
-	var r _RECT
+	var r Rect32
 	if err := _GetClientRect(hwnd, &r); err != nil {
 		panic(err) // TODO(andlabs)
 	}
 
-	width := int(r.Right - r.Left)
-	height := int(r.Bottom - r.Top)
+	dx, dy := int(r.Dx()), int(r.Dy())
 	screen.SendSize(size.Event{
-		WidthPx:     width,
-		HeightPx:    height,
-		WidthPt:     geom.Pt(width),
-		HeightPt:    geom.Pt(height),
+		WidthPx:     dx,
+		HeightPx:    dy,
+		WidthPt:     geom.Pt(dx),
+		HeightPt:    geom.Pt(dy),
 		PixelsPerPt: 1,
 	})
 }

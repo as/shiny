@@ -14,16 +14,19 @@ func _RGB(r, g, b byte) _COLORREF {
 	return _COLORREF(r) | _COLORREF(g)<<8 | _COLORREF(b)<<16
 }
 
-type _POINT struct {
+type Point32 struct {
 	X int32
 	Y int32
 }
+func (r Rect32) Dx() int32{
+	return r.Max.X - r.Min.X
+}
+func (r Rect32) Dy() int32 {
+	return r.Max.Y - r.Min.Y
+}
 
-type _RECT struct {
-	Left   int32
-	Top    int32
-	Right  int32
-	Bottom int32
+type Rect32 struct {
+	Min, Max Point32
 }
 
 type _MSG struct {
@@ -32,7 +35,7 @@ type _MSG struct {
 	Wparam  uintptr
 	Lparam  uintptr
 	Time    uint32
-	Pt      _POINT
+	Pt      Point32
 }
 
 type _WNDCLASS struct {

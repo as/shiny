@@ -80,6 +80,7 @@ func (s *screenImpl) NewWindow(opts *screen.NewWindowOptions) (screen.Window, er
 	return s.windows, nil
 }
 
+/*
 // experimental: attempt to overlay on top of existing window
 func (s *screenImpl) newWindow(opts *screen.NewWindowOptions) (screen.Window, error) {
 	var (
@@ -111,3 +112,4 @@ func (s *screenImpl) newWindow(opts *screen.NewWindowOptions) (screen.Window, er
 	win32.Show(h)
 	return s.windows, nil
 }
+*/

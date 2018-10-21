@@ -140,7 +140,7 @@ func _DispatchMessage(msg *_MSG) (ret int32) {
 	return
 }
 
-func _GetClientRect(hwnd syscall.Handle, rect *_RECT) (err error) {
+func _GetClientRect(hwnd syscall.Handle, rect *Rect32) (err error) {
 	r1, _, e1 := syscall.Syscall(procGetClientRect.Addr(), 2, uintptr(hwnd), uintptr(unsafe.Pointer(rect)), 0)
 	if r1 == 0 {
 		if e1 != 0 {
@@ -152,7 +152,7 @@ func _GetClientRect(hwnd syscall.Handle, rect *_RECT) (err error) {
 	return
 }
 
-func _GetWindowRect(hwnd syscall.Handle, rect *_RECT) (err error) {
+func _GetWindowRect(hwnd syscall.Handle, rect *Rect32) (err error) {
 	r1, _, e1 := syscall.Syscall(procGetWindowRect.Addr(), 2, uintptr(hwnd), uintptr(unsafe.Pointer(rect)), 0)
 	if r1 == 0 {
 		if e1 != 0 {
@@ -275,7 +275,7 @@ func _ShowWindow(hwnd syscall.Handle, cmdshow int32) (wasvisible bool) {
 	return
 }
 
-func _ScreenToClient(hwnd syscall.Handle, lpPoint *_POINT) (ok bool) {
+func _ScreenToClient(hwnd syscall.Handle, lpPoint *Point32) (ok bool) {
 	r0, _, _ := syscall.Syscall(procScreenToClient.Addr(), 2, uintptr(hwnd), uintptr(unsafe.Pointer(lpPoint)), 0)
 	ok = r0 != 0
 	return

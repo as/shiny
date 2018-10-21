@@ -11,31 +11,23 @@ import (
 
 type Scroll = mouse.Event
 
-func sendScrollEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
-	e := mouse.Event{
-		X:         float32(_GET_X_LPARAM(lParam)),
-		Y:         float32(_GET_Y_LPARAM(lParam)),
-		Modifiers: keyModifiers(),
-	}
-	e.Direction = mouse.DirStep
+func sendScrollEvent(hwnd syscall.Handle, _ uint32, wp, lp uintptr) (lResult uintptr) {
+	
 	// Convert from screen to window coordinates.
-	p := _POINT{
-		int32(e.X),
-		int32(e.Y),
-	}
+	p := Point32{int32(uint16(lp)), int32(uint16(lp>>16))}
 	_ScreenToClient(hwnd, &p)
-	e.X = float32(p.X)
-	e.Y = float32(p.Y)
-	delta := _GET_WHEEL_DELTA_WPARAM(wParam) / _WHEEL_DELTA
-	switch {
-	case delta > 0:
-		e.Button = mouse.ButtonWheelUp
-	case delta < 0:
-		e.Button = mouse.ButtonWheelDown
-		delta = -delta
-	default:
-		return
+	
+	e := mouse.Event{
+		X:         float32(p.X),
+		Y:         float32(p.Y),
+		Modifiers: keyModifiers(),
+		Direction: mouse.DirStep,
+		Button: mouse.ButtonWheelDown,
 	}
+	if int16(wp >> 16) > 0{
+		e.Button = mouse.ButtonWheelUp
+	}
+	
 	screen.SendScroll(e)
 	return
 }
