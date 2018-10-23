@@ -64,9 +64,9 @@ type ktab [256]key.Code
 func (k *ktab) sendDown(h syscall.Handle, m uint32, w, l uintptr) uintptr {
 	const prev = 1 << 30
 	dir := key.DirNone
-		if l & prev != prev {
-			dir = key.DirPress
-		}
+	if l&prev != prev {
+		dir = key.DirPress
+	}
 	screen.Dev.Key <- key.Event{
 		Rune:      readRune(uint32(w), byte(l>>16)),
 		Code:      keytab[byte(w)],

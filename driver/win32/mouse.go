@@ -17,6 +17,7 @@ type mouseevent struct {
 	dir mouse.Direction
 	but mouse.Button
 }
+
 func (m *mouseevent) send(hwnd syscall.Handle, msg uint32, wp, lp uintptr) (lResult uintptr) {
 	screen.SendMouse(mouse.Event{
 		Direction: m.dir,
