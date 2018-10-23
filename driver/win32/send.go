@@ -4,20 +4,16 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/as/shiny/event/paint"
 	"github.com/as/shiny/event/size"
 	"github.com/as/shiny/geom"
 	"github.com/as/shiny/screen"
 )
 
-type Paint = paint.Event
+type Size = size.Event
 
-var PaintEvent func(hwnd syscall.Handle, e paint.Event)
-
-func sendPaint(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
-	screen.SendPaint(Paint{})
-	return DefWindowProc(hwnd, uMsg, wParam, lParam)
-}
+var (
+	SizeEvent      func(hwnd syscall.Handle, e size.Event)
+)
 
 func sendSizeEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {
 	wp := (*WindowPos)(unsafe.Pointer(lParam))
