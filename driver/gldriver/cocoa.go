@@ -37,7 +37,6 @@ import (
 	"unsafe"
 
 	"github.com/as/shiny/driver/internal/lifecycler"
-	"github.com/as/shiny/screen"
 	"github.com/as/shiny/event/key"
 	"github.com/as/shiny/event/lifecycle"
 	"github.com/as/shiny/event/mouse"
@@ -45,6 +44,7 @@ import (
 	"github.com/as/shiny/event/size"
 	"github.com/as/shiny/geom"
 	"github.com/as/shiny/gl"
+	"github.com/as/shiny/screen"
 )
 
 var initThreadID C.uint64_t

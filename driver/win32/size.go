@@ -12,7 +12,7 @@ import (
 type Size = size.Event
 
 var (
-	SizeEvent      func(hwnd syscall.Handle, e size.Event)
+	SizeEvent func(hwnd syscall.Handle, e size.Event)
 )
 
 func sendSizeEvent(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr) (lResult uintptr) {

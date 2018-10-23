@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package paint 
+package paint
 
 type Event struct {
 	// External is true for paint events sent by the screen driver.

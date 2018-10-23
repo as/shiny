@@ -9,8 +9,8 @@ import (
 	"image"
 	"sync"
 
-	"github.com/as/shiny/screen"
 	"github.com/as/shiny/gl"
+	"github.com/as/shiny/screen"
 )
 
 var theScreen = &screenImpl{}

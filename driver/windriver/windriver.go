@@ -8,7 +8,7 @@ package windriver
 
 import (
 	"github.com/as/shiny/driver/internal/errscreen"
-	"github.com/as/shiny/driver/internal/win32"
+	"github.com/as/shiny/driver/win32"
 	"github.com/as/shiny/screen"
 )
 

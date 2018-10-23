@@ -11,7 +11,7 @@ import (
 	"image"
 	"unsafe"
 
-	"github.com/as/shiny/driver/internal/win32"
+	"github.com/as/shiny/driver/win32"
 	"github.com/as/shiny/screen"
 )
 
@@ -64,7 +64,7 @@ func (s *screenImpl) NewWindow(opts *screen.NewWindowOptions) (screen.Window, er
 	if err != nil {
 		return nil, err
 	}
-	_, err = win32.SetGraphicsMode(dc, _GM_ADVANCED)
+	_, err = win32.SetGraphicsMode(dc, win32.GmAdvanced)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (s *screenImpl) NewWindow(opts *screen.NewWindowOptions) (screen.Window, er
 		dc:   dc,
 		hwnd: h,
 	}
-	if err = win32.ResizeClientRect(h, opts); err != nil {
+	if err = win32.Resize(h, win32.Pt(opts.Width, opts.Height)); err != nil {
 		return nil, err
 	}
 	win32.Show(h)

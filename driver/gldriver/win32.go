@@ -14,13 +14,13 @@ import (
 	"unsafe"
 
 	"github.com/as/shiny/driver/internal/win32"
-	"github.com/as/shiny/screen"
 	"github.com/as/shiny/event/key"
 	"github.com/as/shiny/event/lifecycle"
 	"github.com/as/shiny/event/mouse"
 	"github.com/as/shiny/event/paint"
 	"github.com/as/shiny/event/size"
 	"github.com/as/shiny/gl"
+	"github.com/as/shiny/screen"
 )
 
 // TODO: change this to true, after manual testing on Win32.

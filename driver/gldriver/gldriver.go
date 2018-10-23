@@ -11,9 +11,9 @@ import (
 	"math"
 
 	"github.com/as/shiny/driver/internal/errscreen"
-	"github.com/as/shiny/screen"
-	"github.com/as/shiny/math/f64"
 	"github.com/as/shiny/gl"
+	"github.com/as/shiny/math/f64"
+	"github.com/as/shiny/screen"
 )
 
 // Main is called by the program's main function to run the graphical

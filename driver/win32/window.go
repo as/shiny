@@ -58,6 +58,33 @@ func SendMessage(hwnd syscall.Handle, uMsg uint32, wParam uintptr, lParam uintpt
 	return sendMessage(hwnd, uMsg, wParam, lParam)
 }
 
+// Resize makes hwnd client rectangle opts.Width by opts.Height in size.
+func Resize(h syscall.Handle, p Point) error {
+	if p.X == 0 || p.Y == 0 {
+		return nil
+	}
+
+	var cr Rectangle
+	if err := GetClientRect(h, &cr); err != nil {
+		return err
+	}
+
+	var wr Rectangle
+	if err := GetWindowRect(h, &wr); err != nil {
+		return err
+	}
+
+	wr.Max.X = wr.Dx() - (cr.Max.X - int32(p.X))
+	wr.Max.Y = wr.Dy() - (cr.Max.Y - int32(p.Y))
+
+	return Reshape(h, wr)
+}
+
+// Reshape makes hwnd client rectangle opts.Width by opts.Height in size.
+func Reshape(h syscall.Handle, r Rectangle) error {
+	return MoveWindow(h, r.Min.X, r.Min.Y, r.Dx(), r.Dy(), false)
+}
+
 // Show shows a newly created window.
 // It sends the appropriate lifecycle events, makes the window appear
 // on the screen, and sends an initial size event.

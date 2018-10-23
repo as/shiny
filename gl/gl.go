@@ -7,7 +7,6 @@
 
 package gl
 
-
 // TODO(crawshaw): should functions on specific types become methods? E.g.
 //                 func (t Texture) Bind(target Enum)
 //                 this seems natural in Go, but moves us slightly
@@ -19,15 +18,17 @@ import (
 )
 
 type context int
-func (*context) enqueue(v interface{}) uintptr{
+
+func (*context) enqueue(v interface{}) uintptr {
 	return 1
 }
-func (*context) cString(s string) (z uintptr, fn func()){
+func (*context) cString(s string) (z uintptr, fn func()) {
 	return
 }
-func (*context) cStringPtr(s string) (z uintptr, fn func()){
+func (*context) cStringPtr(s string) (z uintptr, fn func()) {
 	return
 }
+
 type context3 = context
 
 func (ctx *context) ActiveTexture(texture Enum) {

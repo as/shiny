@@ -14,8 +14,8 @@ import (
 	"github.com/BurntSushi/xgb/render"
 	"github.com/BurntSushi/xgb/xproto"
 
-	"github.com/as/shiny/screen"
 	"github.com/as/shiny/math/f64"
+	"github.com/as/shiny/screen"
 )
 
 const textureDepth = 32

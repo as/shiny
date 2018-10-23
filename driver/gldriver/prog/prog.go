@@ -6,9 +6,9 @@ import (
 	"image/draw"
 	"log"
 
+	"github.com/as/shiny/event/paint"
 	"github.com/as/shiny/screen"
 	"github.com/as/ui"
-	"github.com/as/shiny/event/paint"
 )
 
 func main() {

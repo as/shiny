@@ -11,7 +11,7 @@ import (
 	"image/draw"
 	"syscall"
 
-	"github.com/as/shiny/driver/internal/win32"
+	"github.com/as/shiny/driver/win32"
 )
 
 type bufferImpl struct {

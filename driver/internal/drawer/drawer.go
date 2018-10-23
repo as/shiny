@@ -9,8 +9,8 @@ import (
 	"image"
 	"image/draw"
 
-	"github.com/as/shiny/screen"
 	"github.com/as/shiny/math/f64"
+	"github.com/as/shiny/screen"
 )
 
 // Copy implements the Copy method of the screen.Drawer interface by calling

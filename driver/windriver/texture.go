@@ -8,7 +8,7 @@ package windriver
 
 import (
 	"github.com/as/shiny/driver/internal/swizzle"
-	"github.com/as/shiny/driver/internal/win32"
+	"github.com/as/shiny/driver/win32"
 	"github.com/as/shiny/screen"
 	"image"
 	"image/color"

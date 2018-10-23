@@ -82,7 +82,7 @@ func SendMouse(e Mouse) {
 		// TODO: Retry on failure, but only if it's a press or release
 		// note that this may hang the user, so a better fix should be
 		// in order
-		if e.Button != mouse.ButtonNone && e.Direction != mouse.DirNone{
+		if e.Button != mouse.ButtonNone && e.Direction != mouse.DirNone {
 			Dev.Mouse <- e
 		}
 	}
@@ -139,7 +139,7 @@ type PublishResult struct {
 type NewWindowOptions struct {
 	Width, Height int
 	Title         string
-	
+
 	// Overlay, if true, attempts to create a new window over top
 	// of the parent process's existing window (similar to running
 	// a graphical application in Plan9 over top an existing Rio

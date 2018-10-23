@@ -12,7 +12,7 @@ import (
 	"github.com/as/shiny/driver/internal/drawer"
 
 	"github.com/as/shiny/driver/internal/swizzle"
-	"github.com/as/shiny/driver/internal/win32"
+	"github.com/as/shiny/driver/win32"
 	"github.com/as/shiny/math/f64"
 	"github.com/as/shiny/screen"
 
@@ -99,7 +99,7 @@ func drawWindow(dc syscall.Handle, src2dst f64.Aff3, src interface{}, sr image.R
 		// general drawing
 		dr = sr.Sub(sr.Min)
 
-		x := win32.XFORM{
+		x := win32.Xform{
 			M11: +float32(src2dst[0]),
 			M12: -float32(src2dst[1]),
 			M21: -float32(src2dst[3]),
@@ -112,7 +112,7 @@ func drawWindow(dc syscall.Handle, src2dst f64.Aff3, src interface{}, sr image.R
 			return err
 		}
 		defer func() {
-			err := win32.ModifyWorldTransform(dc, nil, _MWT_IDENTITY)
+			err := win32.ModifyWorldTransform(dc, nil, win32.MWTIdentity)
 			if retErr == nil {
 				retErr = err
 			}

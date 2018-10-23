@@ -18,11 +18,11 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 
 	"github.com/as/shiny/driver/internal/x11key"
-	"github.com/as/shiny/screen"
-	"github.com/as/shiny/math/f64"
 	"github.com/as/shiny/event/key"
 	"github.com/as/shiny/event/lifecycle"
 	"github.com/as/shiny/event/mouse"
+	"github.com/as/shiny/math/f64"
+	"github.com/as/shiny/screen"
 	//	"github.com/as/shiny/event/paint"
 )
 

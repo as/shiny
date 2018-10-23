@@ -31,13 +31,13 @@ import (
 	"unsafe"
 
 	"github.com/as/shiny/driver/internal/x11key"
-	"github.com/as/shiny/screen"
 	"github.com/as/shiny/event/key"
 	"github.com/as/shiny/event/mouse"
 	"github.com/as/shiny/event/paint"
 	"github.com/as/shiny/event/size"
 	"github.com/as/shiny/geom"
 	"github.com/as/shiny/gl"
+	"github.com/as/shiny/screen"
 )
 
 const useLifecycler = true

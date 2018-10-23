@@ -11,10 +11,10 @@ import (
 	"sync"
 
 	"github.com/as/shiny/driver/internal/drawer"
-	"github.com/as/shiny/screen"
-	"github.com/as/shiny/math/f64"
 	"github.com/as/shiny/event/size"
 	"github.com/as/shiny/gl"
+	"github.com/as/shiny/math/f64"
+	"github.com/as/shiny/screen"
 )
 
 type windowImpl struct {

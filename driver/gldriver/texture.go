@@ -10,8 +10,8 @@ import (
 	"image/color"
 	"image/draw"
 
-	"github.com/as/shiny/screen"
 	"github.com/as/shiny/gl"
+	"github.com/as/shiny/screen"
 )
 
 type textureImpl struct {

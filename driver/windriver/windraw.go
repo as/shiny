@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/as/shiny/driver/internal/win32"
+	"github.com/as/shiny/driver/win32"
 )
 
 func mkbitmap(size image.Point) (syscall.Handle, *byte, error) {
@@ -25,24 +25,24 @@ func mkbitmap(size image.Point) (syscall.Handle, *byte, error) {
 			Height:      -int32(size.Y), // negative height to force top-down drawing
 			Planes:      1,
 			BitCount:    32,
-			Compression: _BI_RGB,
+			Compression: win32.BiRGB,
 			SizeImage:   uint32(size.X * size.Y * 4),
 		},
 	}
 
 	var ppvBits *byte
-	bitmap, err := win32.CreateDIBSection(0, &bi, _DIB_RGB_COLORS, &ppvBits, 0, 0)
+	bitmap, err := win32.CreateDIBSection(0, &bi, win32.DibRGBColors, &ppvBits, 0, 0)
 	if err != nil {
 		return 0, nil, err
 	}
 	return bitmap, ppvBits, nil
 }
 
-var blendOverFunc = _BLENDFUNCTION{
-	BlendOp:             _AC_SRC_OVER,
-	BlendFlags:          0,
-	SourceConstantAlpha: 255,           // only use per-pixel alphas
-	AlphaFormat:         _AC_SRC_ALPHA, // premultiplied
+var blendOverFunc = win32.BlendFunc{
+	Op:            win32.AcSrcOver,
+	Flags:         0,
+	SrcConstAlpha: 255,              // only use per-pixel alphas
+	AlphaFormat:   win32.AcSrcAlpha, // premultiplied
 }
 
 func copyBitmapToDC(dc syscall.Handle, dr image.Rectangle, src syscall.Handle, sr image.Rectangle, op draw.Op) (retErr error) {
@@ -60,10 +60,10 @@ func copyBitmapToDC(dc syscall.Handle, dr image.Rectangle, src syscall.Handle, s
 	switch op {
 	case draw.Src:
 		return win32.StretchBlt(dc, int32(dr.Min.X), int32(dr.Min.Y), int32(dr.Dx()), int32(dr.Dy()),
-			memdc, int32(sr.Min.X), int32(sr.Min.Y), int32(sr.Dx()), int32(sr.Dy()), _SRCCOPY)
+			memdc, int32(sr.Min.X), int32(sr.Min.Y), int32(sr.Dx()), int32(sr.Dy()), win32.SrcCopy)
 	case draw.Over:
 		return win32.AlphaBlend(dc, int32(dr.Min.X), int32(dr.Min.Y), int32(dr.Dx()), int32(dr.Dy()),
-			memdc, int32(sr.Min.X), int32(sr.Min.Y), int32(sr.Dx()), int32(sr.Dy()), blendOverFunc.ToUintptr())
+			memdc, int32(sr.Min.X), int32(sr.Min.Y), int32(sr.Dx()), int32(sr.Dy()), blendOverFunc.Uintptr())
 	default:
 		return fmt.Errorf("windriver: invalid draw operation %v", op)
 	}
@@ -80,9 +80,9 @@ func fill(dc syscall.Handle, dr image.Rectangle, c color.Color, op draw.Op) erro
 		}
 		defer win32.DeleteObject(brush)
 
-		return win32.FillRect(dc, &win32.Rect32{
-			win32.Point32{int32(dr.Min.X), int32(dr.Min.Y)},
-			win32.Point32{int32(dr.Max.X), int32(dr.Max.Y)},
+		return win32.FillRect(dc, &win32.Rectangle{
+			win32.Point{int32(dr.Min.X), int32(dr.Min.Y)},
+			win32.Point{int32(dr.Max.X), int32(dr.Max.Y)},
 		}, brush)
 	}
 
