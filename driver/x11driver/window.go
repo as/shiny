@@ -142,7 +142,6 @@ func (w *windowImpl) handleMouse(x, y int16, b xproto.Button, state uint16, dir 
 		btn = mouse.ButtonWheelRight
 	}
 	if btn.IsWheel() {
-		return
 		if dir != mouse.DirPress {
 			return
 		}
