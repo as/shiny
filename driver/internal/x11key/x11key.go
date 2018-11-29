@@ -51,6 +51,19 @@ func (t *KeysymTable) Lookup(detail uint8, state uint16) (rune, key.Code) {
 		r, c = -1, nonUnicodeKeycodes[unshifted]
 	}
 
+	if state&ControlMask != 0 {
+		switch r {
+		case 'u':
+			r = '\x15'
+		case 'a':
+			r = '\x01'
+		case 'e':
+			r = '\x05'
+		case 'w':
+			r = '\x17'
+		}
+	}
+
 	// TODO: Unicode-but-not-ASCII keysyms like the Swiss keyboard's 'ö'.
 	return r, c
 }
