@@ -17,20 +17,6 @@ import (
 	"unsafe"
 )
 
-type context int
-
-func (*context) enqueue(v interface{}) uintptr {
-	return 1
-}
-func (*context) cString(s string) (z uintptr, fn func()) {
-	return
-}
-func (*context) cStringPtr(s string) (z uintptr, fn func()) {
-	return
-}
-
-type context3 = context
-
 func (ctx *context) ActiveTexture(texture Enum) {
 	ctx.enqueue(call{
 		args: fnargs{
