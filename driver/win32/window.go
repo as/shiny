@@ -1,6 +1,7 @@
-package win32
 
 // +build windows
+
+package win32
 
 import (
 	"syscall"
