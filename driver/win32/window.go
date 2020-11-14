@@ -1,5 +1,7 @@
 package win32
 
+// +build windows
+
 import (
 	"syscall"
 	"unsafe"
