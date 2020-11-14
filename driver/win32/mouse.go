@@ -1,3 +1,6 @@
+
+// +build windows
+
 package win32
 
 import (
@@ -6,8 +9,6 @@ import (
 	"github.com/as/shiny/event/mouse"
 	"github.com/as/shiny/screen"
 )
-
-// +build windows
 
 type Mouse = mouse.Event
 
