@@ -1,3 +1,7 @@
+
+// +build windows
+
+
 package win32
 
 import (
